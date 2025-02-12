@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  fastapi: 
+    container_name: fastapi-vist
+    build: .
+    depends_on:
+      - pgdb
+    command: python main.py
+    volumes:
+      - .:/usr/src/app
+    ports:
+      - 8085:8000
+    restart: always
+    env_file:
+      - .env
+
+  pgdb:
+    container_name: vist-postgres
+    image: postgres
+    environment:
+      - POSTGRES_DB=vist-postgres
+      - POSTGRES_USER=postgres-user
+      - POSTGRES_PASSWORD=postgres-password
+    ports:
+      - 5432:5432
+    restart: always
