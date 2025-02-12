@@ -19,9 +19,11 @@ services:
     container_name: vist-postgres
     image: postgres
     environment:
-      - POSTGRES_DB=vist-postgres
-      - POSTGRES_USER=postgres-user
-      - POSTGRES_PASSWORD=postgres-password
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     ports:
-      - 5432:5432
+      - ${DB_PORT}:${DB_PORT}
     restart: always
+    env_file:
+      - .env
