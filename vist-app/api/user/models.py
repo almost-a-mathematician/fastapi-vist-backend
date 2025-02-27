@@ -16,13 +16,14 @@ class User(Model):
     __tablename__ = 'users' 
 
     username: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(String(256))
+    password: Mapped[str] = mapped_column(String(256), nullable=False)
+    email: Mapped[str] = mapped_column(String(254), unique=True, nullable=False)
     profile_pic: Mapped[str] = mapped_column(String(250), nullable=True) 
     birth_date: Mapped[Date] = mapped_column(Date, nullable=True)
     is_hidden_bd: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
     friends: Mapped[List['User']] = relationship(secondary=user_friend_association, cascade='all, delete')
-
+    verified: Mapped[bool] = mapped_column(default=False) 
     
    
 
