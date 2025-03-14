@@ -3,8 +3,6 @@ from datetime import datetime, timedelta, timezone
 import os
 from dotenv import load_dotenv
 
-load_dotenv() # оплучаем доступ к переменным .env
-
 
 class TokenManager:
 
@@ -21,7 +19,19 @@ class TokenManager:
     def create(self, id):
        return encode({'sub': id, 'exp': datetime.now(tz=timezone.utc) + timedelta(minutes=self.lifetime)}, self.secret)
 
+load_dotenv() # оплучаем доступ к переменным .env
 
-email_token = TokenManager(os.getenv('EMAIL_TOKEN_SECRET'), int(os.getenv('EMAIL_TOKEN_LIFETIME')))
-access_token = TokenManager(os.getenv('ACCESS_TOKEN_SECRET'), int(os.getenv('ACCESS_TOKEN_LIFETIME')))
-refresh_token = TokenManager(os.getenv('REFRESH_TOKEN_SECRET'), int(os.getenv('REFRESH_TOKEN_LIFETIME')))
+email_token = TokenManager(
+    secret= os.getenv('EMAIL_TOKEN_SECRET'), 
+    lifetime= int(os.getenv('EMAIL_TOKEN_LIFETIME'))
+)
+
+access_token = TokenManager(
+    secret=os.getenv('ACCESS_TOKEN_SECRET'), 
+    lifetime=int(os.getenv('ACCESS_TOKEN_LIFETIME'))
+)
+
+refresh_token = TokenManager(
+    secret=os.getenv('REFRESH_TOKEN_SECRET'), 
+    lifetime=int(os.getenv('REFRESH_TOKEN_LIFETIME'))
+)
