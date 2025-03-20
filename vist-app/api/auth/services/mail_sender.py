@@ -30,7 +30,7 @@ class MailSender:
 
         await self.fm.send_message(message, template_name=template_filename)
         return True
-
+    
     
 load_dotenv()
 
