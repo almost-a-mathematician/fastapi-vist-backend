@@ -1,3 +1,9 @@
+from dotenv import load_dotenv
+
+
+load_dotenv() # получаем доступ к переменным .env
+
+
 from fastapi import FastAPI
 import uvicorn
 from api.router import router as main_router

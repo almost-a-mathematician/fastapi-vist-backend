@@ -1,7 +1,6 @@
 from pathlib import Path
 from fastapi_mail import FastMail, ConnectionConfig, MessageSchema, MessageType
 import os
-from dotenv import load_dotenv
 
 class MailSender:
 
@@ -20,7 +19,7 @@ class MailSender:
         self.fm = FastMail(conf)
 
      
-    async def send(self, email: str, template_filename, template_params):
+    async def create_and_send(self, email: str, template_filename, template_params):
         message = MessageSchema(
             subject='Vist',
             recipients=[email],
@@ -31,8 +30,6 @@ class MailSender:
         await self.fm.send_message(message, template_name=template_filename)
         return True
     
-    
-load_dotenv()
 
 mail_sender = MailSender(
     smtp_username = os.getenv('MAIL_USERNAME'), 
