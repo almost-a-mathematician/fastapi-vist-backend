@@ -5,6 +5,9 @@ from sqlalchemy.exc import IntegrityError
 class UserExistsException(BaseException): 
     ...
 
+class UserIsNotExistException(BaseException): 
+    ...
+
 class UserService:
     ''' инкапсулирует логику работы с бд над моделью юзера '''
     async def create(self, username, password, email):
@@ -20,6 +23,22 @@ class UserService:
             session.refresh(user)
     
             return user
+        
+    async def update(self, id, **kwargs):
+        async with Session() as session:
+            user = await session.get(User, id)
+            if user == None:
+                raise UserIsNotExistException
+            
+            for key, value in kwargs:
+                if hasattr(user, key):
+                    setattr(user, key, value)
+
+            await session.commit()
+            
+            return user
+
+            
+
 
 user_service = UserService()
-

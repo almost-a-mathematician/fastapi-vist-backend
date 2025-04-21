@@ -20,8 +20,8 @@ class TokenManager:
 
 
 email_token = TokenManager(
-    secret= os.getenv('EMAIL_TOKEN_SECRET'), 
-    lifetime= int(os.getenv('EMAIL_TOKEN_LIFETIME'))
+    secret=os.getenv('EMAIL_TOKEN_SECRET'), 
+    lifetime=int(os.getenv('EMAIL_TOKEN_LIFETIME'))
 )
 
 access_token = TokenManager(

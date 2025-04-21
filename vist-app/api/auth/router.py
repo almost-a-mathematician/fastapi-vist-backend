@@ -4,7 +4,7 @@ from api.auth.endpoints import init_endpoints
 
 router = APIRouter(
     prefix='/auth',
-    tags=['Authentication', 'Authorization']
+    tags=['Auth']
 )
 
 init_endpoints(router)

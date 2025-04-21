@@ -22,7 +22,12 @@ class User(Model):
     birth_date: Mapped[Date] = mapped_column(Date, nullable=True)
     is_hidden_bd: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
-    friends: Mapped[List['User']] = relationship(secondary=user_friend_association, cascade='all, delete')
+    friends: Mapped[List['User']] = relationship(
+        secondary=user_friend_association, 
+        cascade='all, delete',
+        primaryjoin=('User.id == user_friend_association.c.user_id'),
+        secondaryjoin=('User.id == user_friend_association.c.friend_id')
+    )
     verified: Mapped[bool] = mapped_column(default=False) 
     
    
