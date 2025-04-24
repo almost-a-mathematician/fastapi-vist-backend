@@ -1,6 +1,7 @@
 from database import Session
 from api.user.models import User
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select
 
 class UserExistsException(BaseException): 
     ...
@@ -35,10 +36,24 @@ class UserService:
                     setattr(user, key, value)
 
             await session.commit()
-            
+
+            return user
+
+    async def get(self, **kwargs):
+        async with Session() as session:
+            query = select(User)
+
+            for key, value in kwargs:
+                if hasattr(User, key):
+                    column = getattr(User, key)
+                    query = query.where(column == value)
+
+            user = (await session.scalars(query)).first()
+
+            if user == None:
+                raise UserIsNotExistException
+    
             return user
 
             
-
-
 user_service = UserService()

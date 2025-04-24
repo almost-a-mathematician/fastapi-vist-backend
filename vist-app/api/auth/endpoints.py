@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
-from api.auth.schemas import Register, VerifyResponse
+from api.auth.schemas import Login, Register, TokenResponse
 from api.auth.services.password_manager import password_manager
-from api.user.services import UserExistsException, user_service
+from api.user.services import UserExistsException, UserIsNotExistException, user_service
 from api.auth.services.token_manager import email_token, access_token, refresh_token
 from api.auth.services.mail_sender import mail_sender
 import os
@@ -38,12 +38,41 @@ def init_endpoints(auth_router: APIRouter):
 
         return UserFullResponse(**user.__dict__).model_dump()
 
+
     @auth_router.post('/verify')
-    async def verify(token) -> VerifyResponse:
+    async def verify(token) -> TokenResponse:
         jwt_claims = email_token.verify(token)
         access = access_token.create(jwt_claims.sub)
         refresh = refresh_token.create(jwt_claims.sub)
         await user_service.update(id=jwt_claims.sub, verified=True)
-        return VerifyResponse(access, refresh).model_dump()
+        return TokenResponse(access, refresh).model_dump()
+
+
+    @auth_router.post('/login')
+    async def login(payload: Login) -> TokenResponse:
+        try:
+            user = await user_service.get(**payload.model_dump()) 
+        except UserIsNotExistException:
+            raise HTTPException(status_code=404)
+
+        if not password_manager.check(payload.password, user.password):
+            raise HTTPException(status_code=404)
+        
+        access = access_token.create(user.id)
+        refresh = refresh_token.create(user.id)
+
+        return TokenResponse(access, refresh).model_dump()
+
+        
+
+        
+
+        
+
+        
+
+
+
+
 
 
