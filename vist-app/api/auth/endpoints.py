@@ -41,7 +41,10 @@ def init_endpoints(auth_router: APIRouter):
 
     @auth_router.post('/verify')
     async def verify(token) -> TokenResponse:
-        jwt_claims = email_token.verify(token)
+        try:
+            jwt_claims = email_token.verify(token)
+        except:
+            raise HTTPException(status_code=401)
         access = access_token.create(jwt_claims.sub)
         refresh = refresh_token.create(jwt_claims.sub)
         await user_service.update(id=jwt_claims.sub, verified=True)
@@ -62,6 +65,19 @@ def init_endpoints(auth_router: APIRouter):
         refresh = refresh_token.create(user.id)
 
         return TokenResponse(access, refresh).model_dump()
+    
+    @auth_router.post('/refresh/')
+    async def refresh(token):
+        try:
+            jwt_claims = refresh_token.verify(token)
+        except:
+            raise HTTPException(status_code=401)
+        
+        access = access_token.create(jwt_claims.sub)
+        refresh = refresh_token.create(jwt_claims.sub)
+
+        return TokenResponse(access, refresh).model_dump()
+
 
         
 
