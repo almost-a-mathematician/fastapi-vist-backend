@@ -21,6 +21,11 @@ class Login(BaseModel):
             raise ValueError
         
         return self
+    
+class ForgetPassword(BaseModel):
+    email: EmailStr
 
 
+class ResetPassword(BaseModel):
+    password: str
 

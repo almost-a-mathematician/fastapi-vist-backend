@@ -5,9 +5,6 @@ import os
 
 class TokenManager:
 
-    # secret = None
-    # lifetime = None
-
     def __init__(self, secret, lifetime):
         self.secret = secret
         self.lifetime = lifetime

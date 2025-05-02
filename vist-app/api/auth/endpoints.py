@@ -1,5 +1,6 @@
+from typing import Literal
 from fastapi import APIRouter, HTTPException
-from api.auth.schemas import Login, Register, TokenResponse
+from api.auth.schemas import ForgetPassword, Login, Register, ResetPassword, TokenResponse
 from api.auth.services.password_manager import password_manager
 from api.user.services import UserExistsException, UserIsNotExistException, user_service
 from api.auth.services.token_manager import email_token, access_token, refresh_token
@@ -66,8 +67,9 @@ def init_endpoints(auth_router: APIRouter):
 
         return TokenResponse(access, refresh).model_dump()
     
-    @auth_router.post('/refresh/')
-    async def refresh(token):
+
+    @auth_router.post('/refresh')
+    async def refresh(token) -> TokenResponse:
         try:
             jwt_claims = refresh_token.verify(token)
         except:
@@ -79,13 +81,40 @@ def init_endpoints(auth_router: APIRouter):
         return TokenResponse(access, refresh).model_dump()
 
 
+    @auth_router.post('/forget-password') 
+    async def forget_password(payload: ForgetPassword) -> Literal[True]:
+        try:
+            user = await user_service.get(email=payload.email) 
+        except UserIsNotExistException:
+            raise HTTPException(status_code=200)
+        
+        token = email_token.create(id=user.id)
+
+        await mail_sender.create_and_send(
+            email=user.email, 
+            template_filename='reset_password.html', 
+            template_params={
+                'username':user.username, 
+                'link': os.getenv('FRONTEND_RESET_PW_PAGE') + f'?token={token}', 
+                'lifetime':email_token.lifetime
+            }
+        )
+
+        return True
         
 
+    @auth_router.patch('/reset-password') # добавить возможность менять пароль даже если юзер не забыл старый
+    async def reset_password(token, payload: ResetPassword) -> Literal[True]:
+        try:
+            jwt_claims = email_token.verify(token)
+        except:
+            raise HTTPException(status_code=401)
         
+        new_password = password_manager.generate(payload.password)
 
-        
+        await user_service.update(id=jwt_claims.sub, password=new_password)
 
-        
+        return True
 
 
 
