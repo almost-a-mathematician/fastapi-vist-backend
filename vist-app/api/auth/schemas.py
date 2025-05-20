@@ -1,3 +1,4 @@
+from typing import Literal, Optional
 from pydantic import BaseModel, EmailStr, model_validator
 
 
@@ -6,13 +7,16 @@ class Register(BaseModel):
     email: EmailStr
     password: str
 
+class DuplicateUserResponse(BaseModel):
+    column: Literal['email', 'username'] 
+
 class TokenResponse(BaseModel):
     access: str
     refresh: str
-
+    
 class Login(BaseModel):
-    username: str | None
-    email: EmailStr | None
+    username: str = None
+    email: EmailStr = None
     password: str
 
     @model_validator(mode='after')

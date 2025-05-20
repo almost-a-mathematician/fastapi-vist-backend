@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List
 from database import Model
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import Column, DateTime, ForeignKey, String, Date, Table
+from sqlalchemy import Column, ForeignKey, String, Date, Table
 
 
 user_friend_association = Table(
@@ -29,6 +29,7 @@ class User(Model):
         secondaryjoin=('User.id == user_friend_association.c.friend_id')
     )
     verified: Mapped[bool] = mapped_column(default=False) 
+    last_email_at: Mapped[datetime] = mapped_column(nullable=True)
     
    
 

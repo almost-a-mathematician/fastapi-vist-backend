@@ -1,7 +1,7 @@
 from fastapi import Depends, Header, HTTPException
 from jwt import ExpiredSignatureError
 from api.auth.services.token_manager import access_token
-from api.user.services import user_service
+from api.user.services.db import user_service
 
 
 async def get_user_by_token(authorization = Header()):
@@ -9,7 +9,7 @@ async def get_user_by_token(authorization = Header()):
 
     try:
         jwt_claims = access_token.verify(token)
-        return await user_service.get(id=jwt_claims.sub)
+        return await user_service.get(id=jwt_claims['sub'])
     except ExpiredSignatureError:
         raise HTTPException(status_code=403)
     except:

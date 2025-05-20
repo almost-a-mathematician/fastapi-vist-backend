@@ -1,18 +1,25 @@
 from typing import Literal
 from fastapi import APIRouter, HTTPException
-from api.auth.schemas import ForgetPassword, Login, Register, ResetPassword, TokenResponse
+from fastapi.responses import JSONResponse
+from api.auth.schemas import ForgetPassword, Login, Register, ResetPassword, TokenResponse, DuplicateUserResponse
 from api.auth.services.password_manager import password_manager
-from api.user.services import UserExistsException, UserIsNotExistException, user_service
+from api.user.services.db import UserExistsException, UserIsNotExistException, user_service
+from api.user.services.user_mail_sender import user_mail_sender, SendDelayException
 from api.auth.services.token_manager import email_token, access_token, refresh_token
-from api.auth.services.mail_sender import mail_sender
 import os
 from api.user.schemas import UserFullResponse
+from shared.fix_exec_time import fix_exec_time
 
 
 
 def init_endpoints(auth_router: APIRouter):
 
-    @auth_router.post('/register')
+    @auth_router.post(
+        path='/register',
+        responses={
+            409: {'model': DuplicateUserResponse}
+        }
+    )
     async def register(payload: Register) -> UserFullResponse:
         password_hash = password_manager.generate(payload.password)
 
@@ -22,21 +29,26 @@ def init_endpoints(auth_router: APIRouter):
                 password=password_hash, 
                 email=payload.email
             )
-        except UserExistsException:
-            raise HTTPException(status_code=409, detail='User with this username or email already exists')
+        except UserExistsException as e:
+            return JSONResponse(
+                status_code=409, 
+                content=DuplicateUserResponse(column=e.column).model_dump()
+            )
         
         token = email_token.create(id=user.id)
-
-        await mail_sender.create_and_send(
-            email=user.email, 
-            template_filename='email_verify.html', 
-            template_params={
-                'username':user.username, 
-                'link': os.getenv('FRONTEND_VERIFY_PAGE') + f'?token={token}', 
-                'lifetime':email_token.lifetime
-            }
-        )
-
+        try:
+            await user_mail_sender.create_and_send(
+                user=user, 
+                template_filename='email_verify.html', 
+                template_params={
+                    'username':user.username, 
+                    'link': os.getenv('FRONTEND_VERIFY_PAGE') + f'?token={token}', 
+                    'lifetime':email_token.lifetime
+                }
+            )
+        except SendDelayException:
+            raise HTTPException(status_code=429)
+        
         return UserFullResponse(**user.__dict__).model_dump()
 
 
@@ -46,26 +58,47 @@ def init_endpoints(auth_router: APIRouter):
             jwt_claims = email_token.verify(token)
         except:
             raise HTTPException(status_code=401)
-        access = access_token.create(jwt_claims.sub)
-        refresh = refresh_token.create(jwt_claims.sub)
-        await user_service.update(id=jwt_claims.sub, verified=True)
-        return TokenResponse(access, refresh).model_dump()
+        access = access_token.create(jwt_claims['sub'])
+        refresh = refresh_token.create(jwt_claims['sub'])
+        await user_service.update(id=int(jwt_claims['sub']), verified=True)
+        return TokenResponse(access=access, refresh=refresh).model_dump()
 
 
     @auth_router.post('/login')
     async def login(payload: Login) -> TokenResponse:
         try:
-            user = await user_service.get(**payload.model_dump()) 
+            if payload.username != None:
+                user = await user_service.get(username=payload.username) 
+            elif payload.email != None:
+                user = await user_service.get(email=payload.email) 
         except UserIsNotExistException:
             raise HTTPException(status_code=404)
-
-        if not password_manager.check(payload.password, user.password):
-            raise HTTPException(status_code=404)
         
+        if user.verified != True:
+            token = email_token.create(id=user.id)
+
+            try:
+                await user_mail_sender.create_and_send(
+                    user=user, 
+                    template_filename='email_verify.html', 
+                    template_params={
+                        'username':user.username, 
+                        'link': os.getenv('FRONTEND_VERIFY_PAGE') + f'?token={token}', 
+                        'lifetime':email_token.lifetime
+                    }
+                )
+            except SendDelayException:
+                raise HTTPException(status_code=429)
+
+            raise HTTPException(status_code=401)
+
+        if not password_manager.check(provided_password=payload.password, hashed_password=user.password):
+            raise HTTPException(status_code=404)
+
         access = access_token.create(user.id)
         refresh = refresh_token.create(user.id)
 
-        return TokenResponse(access, refresh).model_dump()
+        return TokenResponse(access=access, refresh=refresh).model_dump()
     
 
     @auth_router.post('/refresh')
@@ -75,44 +108,47 @@ def init_endpoints(auth_router: APIRouter):
         except:
             raise HTTPException(status_code=401)
         
-        access = access_token.create(jwt_claims.sub)
-        refresh = refresh_token.create(jwt_claims.sub)
+        access = access_token.create(jwt_claims['sub'])
+        refresh = refresh_token.create(jwt_claims['sub'])
 
-        return TokenResponse(access, refresh).model_dump()
+        return TokenResponse(access=access, refresh=refresh).model_dump()
 
 
     @auth_router.post('/forget-password') 
+    @fix_exec_time(time=5)
     async def forget_password(payload: ForgetPassword) -> Literal[True]:
         try:
             user = await user_service.get(email=payload.email) 
         except UserIsNotExistException:
-            raise HTTPException(status_code=200)
+            return True
         
         token = email_token.create(id=user.id)
-
-        await mail_sender.create_and_send(
-            email=user.email, 
-            template_filename='reset_password.html', 
-            template_params={
-                'username':user.username, 
-                'link': os.getenv('FRONTEND_RESET_PW_PAGE') + f'?token={token}', 
-                'lifetime':email_token.lifetime
-            }
-        )
-
+        try:
+            await user_mail_sender.create_and_send(
+                user=user, 
+                template_filename='reset_password.html', 
+                template_params={
+                    'username':user.username, 
+                    'link': os.getenv('FRONTEND_RESET_PW_PAGE') + f'?token={token}', 
+                    'lifetime':email_token.lifetime
+                }
+            )
+        except SendDelayException:
+            raise HTTPException(status_code=429)
+        
         return True
         
 
     @auth_router.patch('/reset-password') # добавить возможность менять пароль даже если юзер не забыл старый
     async def reset_password(token, payload: ResetPassword) -> Literal[True]:
-        try:
+        try:  
             jwt_claims = email_token.verify(token)
         except:
             raise HTTPException(status_code=401)
         
         new_password = password_manager.generate(payload.password)
 
-        await user_service.update(id=jwt_claims.sub, password=new_password)
+        await user_service.update(id=int(jwt_claims['sub']), password=new_password)
 
         return True
 
