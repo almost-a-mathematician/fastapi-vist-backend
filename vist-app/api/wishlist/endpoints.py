@@ -12,6 +12,16 @@ def init_endpoints(wishlist_router: APIRouter):
         wishlists = await wishlist_service.get(user, owner_id=owner)
 
         return WishlistsSerializer(items=wishlists).model_dump(context={'auth_user_id': user.id})
+    
+    @wishlist_router.get('/archived')
+    async def get_archived(owner: AuthUserDep) -> WishlistsSerializer:
+
+        wishlists = await wishlist_service.get_archived(owner)
+
+        return WishlistsSerializer(items=wishlists).model_dump(context={'auth_user_id': owner.id})
+
+
+
         
 
         

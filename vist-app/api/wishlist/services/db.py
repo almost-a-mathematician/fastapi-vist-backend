@@ -44,8 +44,6 @@ class WishlistService:
         async with Session() as session:
             
             query = select(Wishlist).where(Wishlist.owner_id == user.id).where(Wishlist.archived_at != None)
-                
-            query = self._filter_visible_for(query, user)
 
             wishlists = (await session.scalars(query)).all()
 
