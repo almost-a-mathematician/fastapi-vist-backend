@@ -1,7 +1,9 @@
+from typing import Annotated
 from fastapi import Depends, Header, HTTPException
 from jwt import ExpiredSignatureError
 from api.auth.services.token_manager import access_token
 from api.user.services.db import user_service
+from api.user.models import User
 
 
 async def get_user_by_token(authorization = Header()):
@@ -15,5 +17,4 @@ async def get_user_by_token(authorization = Header()):
     except:
         raise HTTPException(status_code=401)
 
-AuthUserDep = Depends(get_user_by_token)
-
+AuthUserDep = Annotated[User, Depends(get_user_by_token)]

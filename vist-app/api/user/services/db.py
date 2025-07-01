@@ -43,7 +43,6 @@ class UserService:
                     setattr(user, key, value)
 
             await session.commit()
-
             return user
 
     async def get(self, **kwargs):
