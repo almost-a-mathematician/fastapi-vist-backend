@@ -1,10 +1,11 @@
 from database import Model
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, String, Float
-from api.wishlist.models import Wishlist
 from api.user.models import User
+from typing import TYPE_CHECKING
 
-
+if TYPE_CHECKING:
+    from api.wishlist.models import Wishlist
 class Gift(Model):
     __tablename__ = 'gifts'
 
@@ -17,10 +18,4 @@ class Gift(Model):
     booked_by: Mapped[User | None] = relationship(cascade='all, delete')
     booked_by_id: Mapped[int | None] = mapped_column(ForeignKey('users.id'))
     wishlist_id: Mapped[int] = mapped_column(ForeignKey('wishlists.id'))
-    wishlist: Mapped[Wishlist] = relationship(back_populates="gifts", cascade='all, delete')
-    
-   
-   
-
-
-
+    wishlist: Mapped['Wishlist'] = relationship(back_populates="gifts", cascade='all, delete')

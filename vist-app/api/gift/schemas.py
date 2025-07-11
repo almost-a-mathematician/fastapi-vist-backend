@@ -1,4 +1,5 @@
 from pydantic import BaseModel, HttpUrl
+from api.user.schemas import UserResponse
 
 
 class СreateGift(BaseModel):
@@ -17,3 +18,18 @@ class UpdateGift(BaseModel):
     link_url: HttpUrl | None
     is_priority: bool | None
     
+class GiftIcon(BaseModel):
+    id: int
+    img: str | None
+
+class GiftResponse(GiftIcon):
+    name: str
+    link_url: str
+    is_priority: bool
+    booked_by: UserResponse
+
+class GiftFullResponse(GiftResponse): 
+    price: float
+    description: str | None
+
+

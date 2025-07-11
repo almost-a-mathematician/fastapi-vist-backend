@@ -1,25 +1,42 @@
-from pydantic import BaseModel, field_serializer, RootModel
+from pydantic import BaseModel, field_serializer, RootModel, field_validator
 from datetime import datetime
 from typing import List
 from api.user.schemas import UserResponse
+from api.gift.schemas import GiftIcon
+from datetime import datetime
 
 
-class CreateWishlist(BaseModel):
+class ArchivedAtField():
+    archived_at: datetime | None = None
+
+    @field_validator('archived_at', mode='before')
+    def archived_at_time(cls, value) -> datetime:
+        return None if value is None else datetime.now()
+              
+class CreateWishlist(BaseModel, ArchivedAtField):
     name: str
-    archived_at: datetime | None
 
-class UpdateWishlist(BaseModel):
-    name: str | None 
-    archived_at: datetime | None
+class UpdateWishlist(BaseModel, ArchivedAtField):
+    name: str = None
 
 class UpdateWishlistUsers(RootModel):
     root: List[int]
 
 class WishlistSerializer(BaseModel):
+    id: int
     name: str
     users: List[UserResponse]
+    gifts: List[GiftIcon]
     owner_id: int
-    archived_at: datetime
+    archived_at: datetime | None
+
+    @field_serializer('gifts')
+    def serialize_gifts(self, gifts: List[GiftIcon]):
+        return gifts[:4]
+    
+    @field_serializer('archived_at')
+    def serialize_archived_at(self, archived_at: datetime | None):
+        return None if archived_at is None else str(archived_at)
 
     @field_serializer('users')
     def serialize_users(self, users, info):

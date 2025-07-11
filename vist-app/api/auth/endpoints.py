@@ -49,7 +49,9 @@ def init_endpoints(auth_router: APIRouter):
         except SendDelayException:
             raise HTTPException(status_code=429)
         
-        return UserResponse(**user.__dict__).model_dump()
+        return JSONResponse( 
+            UserResponse.model_validate(user, from_attributes=True).model_dump(context={'auth_user_id': user.id})
+        )
 
 
     @auth_router.post('/verify')
@@ -61,7 +63,7 @@ def init_endpoints(auth_router: APIRouter):
         access = access_token.create(jwt_claims['sub'])
         refresh = refresh_token.create(jwt_claims['sub'])
         await user_service.update(id=int(jwt_claims['sub']), verified=True)
-        return TokenResponse(access=access, refresh=refresh).model_dump()
+        return {'access': access, 'refresh': refresh}
 
 
     @auth_router.post('/login')
@@ -98,7 +100,7 @@ def init_endpoints(auth_router: APIRouter):
         access = access_token.create(user.id)
         refresh = refresh_token.create(user.id)
 
-        return TokenResponse(access=access, refresh=refresh).model_dump()
+        return {'access': access, 'refresh': refresh}
     
 
     @auth_router.post('/refresh')
@@ -111,7 +113,7 @@ def init_endpoints(auth_router: APIRouter):
         access = access_token.create(jwt_claims['sub'])
         refresh = refresh_token.create(jwt_claims['sub'])
 
-        return TokenResponse(access=access, refresh=refresh).model_dump()
+        return {'access': access, 'refresh': refresh}
 
 
     @auth_router.post('/forget-password') 
