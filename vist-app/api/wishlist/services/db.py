@@ -1,8 +1,10 @@
+from typing import List
 from database import Session
 from api.wishlist.models import Wishlist
 from api.user.models import User
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+from api.user.models import user_friend_association
 
 class WishlistIsNotExistException(BaseException):
     ...
@@ -20,7 +22,7 @@ class WishlistService:
         ) 
         return query
 
-    async def get(self, user: User, owner_id: int):
+    async def get(self, user: User, owner_id: int, cursor: int | None, limit: int): 
         async with Session() as session:    
 
             query = (
@@ -28,7 +30,12 @@ class WishlistService:
                 .where(Wishlist.owner_id == owner_id)
                 .where(Wishlist.archived_at == None)
                 .options(selectinload(Wishlist.users), selectinload(Wishlist.gifts))   
+                .order_by(Wishlist.id)
+                .limit(limit)
             )
+            
+            if cursor:
+                query = query.where(Wishlist.id > cursor)
                 
             query = self._filter_visible_for(query, user)
 
@@ -36,7 +43,7 @@ class WishlistService:
 
             return wishlists
         
-    async def get_archived(self, user: User):
+    async def get_archived(self, user: User, cursor: int | None, limit: int):
         async with Session() as session:
             
             query = (
@@ -44,12 +51,42 @@ class WishlistService:
                 .where(Wishlist.owner_id == user.id)
                 .where(Wishlist.archived_at != None)
                 .options(selectinload(Wishlist.users), selectinload(Wishlist.gifts))   
+                .order_by(Wishlist.id)
+                .limit(limit)
             )
                 
+            if cursor:
+                query = query.where(Wishlist.id > cursor)
+
             query = self._filter_visible_for(query, user)
 
             wishlists = (await session.scalars(query)).all()
           
+            return wishlists
+    
+    async def get_by_friends(self, user: User, cursor: int | None, limit: int):
+        async with Session() as session:
+
+            query = (
+                select(Wishlist)
+                .join(User, Wishlist.owner_id == User.id)
+                .join(
+                    user_friend_association, 
+                    User.id == user_friend_association.c.friend_id
+                )
+                .where(user_friend_association.c.user_id == user.id)
+                .options(selectinload(Wishlist.users), selectinload(Wishlist.gifts))
+                .order_by(Wishlist.id)
+                .limit(limit)
+            )
+
+            if cursor:
+                query = query.where(Wishlist.id > cursor)
+
+            query = self._filter_visible_for(query, user)
+        
+            wishlists = (await session.scalars(query)).all()
+        
             return wishlists
         
     async def create(self, owner: User, name: str, archived_at=None):
@@ -65,11 +102,11 @@ class WishlistService:
 
             session.add(wishlist)
             await session.commit()
-            await session.refresh(wishlist, Wishlist.__table__.columns.keys() + ['users', 'gifts'])
+            await session.refresh(wishlist, attribute_names=Wishlist.get_all_columns())
             
             return wishlist
         
-    async def update(self, id, updater, **kwargs):
+    async def update(self, id, updater: User, **kwargs):
         async with Session() as session:
             wishlist = await session.get(Wishlist, id, options=[selectinload(Wishlist.users), selectinload(Wishlist.gifts)])
 
@@ -84,11 +121,29 @@ class WishlistService:
                     setattr(wishlist, key, value)
 
             await session.commit()
+            await session.refresh(wishlist, attribute_names=Wishlist.get_all_columns())
             
-            await session.refresh(wishlist)
-            
-
             return wishlist
+        
+    async def update_users(self, id, updater: User, user_list: List[int]):
+        async with Session() as session:
+            wishlist = await session.get(Wishlist, id, options=[selectinload(Wishlist.users)])
+        
+            if wishlist is None:
+                raise WishlistIsNotExistException
+
+            if wishlist.owner_id != updater.id:
+                raise WishlistPermissionException
+
+            query = select(User).where(User.id.in_(user_list))
+            users = (await session.scalars(query)).all()
+
+            wishlist.users = users
+
+            await session.commit()
+            await session.refresh(wishlist, attribute_names=Wishlist.get_all_columns())
+        
+            return wishlist 
 
         
 wishlist_service = WishlistService()

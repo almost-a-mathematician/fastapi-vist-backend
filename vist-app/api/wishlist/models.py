@@ -25,4 +25,8 @@ class Wishlist(Model):
     gifts: Mapped[List[Gift]] = relationship(back_populates="wishlist")
     archived_at: Mapped[datetime] = mapped_column(nullable=True)
 
+    @classmethod
+    def get_all_columns(cls):
+        return cls.__table__.columns.keys() + ['users', 'gifts']
+
     
