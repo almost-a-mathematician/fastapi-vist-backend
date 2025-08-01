@@ -30,6 +30,9 @@ class User(Model):
     )
     verified: Mapped[bool] = mapped_column(default=False) 
     last_email_at: Mapped[datetime] = mapped_column(nullable=True)
+
+    def are_friends_with(self, user):
+        return user.id in [friend.id for friend in self.friends]
     
    
 

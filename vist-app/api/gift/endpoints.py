@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
-from api.gift.schemas import СreateGift, GiftFullResponse
+from api.gift.schemas import СreateGift, GiftFullResponse, BookGift
 from api.auth.depends import AuthUserDep
-from api.gift.services.db import gift_service, WishlistIsNotExistException, WishlistPermissionException
+from api.gift.services.db import gift_service, WishlistIsNotExistException, WishlistPermissionException, GiftIsNotExistException, GiftPermissionException
 
 
 def init_endpoints(gift_router: APIRouter):
@@ -35,3 +35,22 @@ def init_endpoints(gift_router: APIRouter):
             .model_dump(context={'auth_user_id': user.id})
         )
 
+    @gift_router.put(
+            path='/gifts/{id}/book/',
+            responses={
+            404: {'description': 'in case if gift does not exist'},
+            403: {'description': 'in case if booker has no permission for his action'} 
+        }
+    )
+    async def book(id: int, payload: BookGift, user: AuthUserDep):
+        try:
+            gift = await gift_service.book(id, payload.booked_by, user)
+        except GiftIsNotExistException:
+            raise HTTPException(status_code=404)
+        except (GiftPermissionException, WishlistPermissionException):
+            raise HTTPException(status_code=403)
+       
+        return JSONResponse(
+           GiftFullResponse.model_validate(gift, from_attributes=True)
+           .model_dump(context={'auth_user_id': user.id})
+        )

@@ -89,6 +89,16 @@ class WishlistService:
         
             return wishlists
         
+    async def get_by_id(self, id, user: User):
+        async with Session() as session:
+
+            query = select(Wishlist).where(Wishlist.id == id).options(selectinload(Wishlist.owner).selectinload(User.friends))
+            query = self._filter_visible_for(query, user)
+
+            wishlist = (await session.scalars(query)).first()
+
+            return wishlist
+        
     async def create(self, owner: User, name: str, archived_at=None):
         async with Session() as session:
 

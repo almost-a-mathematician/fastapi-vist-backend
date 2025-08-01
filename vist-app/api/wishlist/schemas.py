@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import List
 from api.user.schemas import UserResponse
 from api.gift.schemas import GiftIcon
-from datetime import datetime
 
 
 class ArchivedAtField():
@@ -31,7 +30,7 @@ class WishlistSerializer(BaseModel):
     archived_at: datetime | None
 
     @field_serializer('gifts')
-    def serialize_gifts(self, gifts: List[GiftIcon]):
+    def serialize_gifts(self, gifts: List['GiftIcon']):
         return gifts[:4]
     
     @field_serializer('archived_at')

@@ -30,5 +30,8 @@ class GiftResponse(GiftIcon):
 class GiftFullResponse(GiftResponse): 
     price: float
     description: str | None
+    wishlist_id: int
 
+class BookGift(BaseModel):
+    booked_by: int | None 
 
