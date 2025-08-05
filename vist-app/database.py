@@ -1,6 +1,6 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, AsyncSession
 
 
 
@@ -26,7 +26,7 @@ engine = create_async_engine(db_settings.DATABASE_URL)
 
 Session = async_sessionmaker(engine)
 
-
+AsyncSessionMaker = async_sessionmaker[AsyncSession]
 
 
 

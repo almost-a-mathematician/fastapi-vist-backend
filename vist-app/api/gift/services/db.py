@@ -1,7 +1,8 @@
+from sqlalchemy import select
 from api.user.models import User
-from database import Session
+from database import Session, AsyncSessionMaker
 from api.gift.models import Gift
-from api.wishlist.services.db import wishlist_service, WishlistIsNotExistException, WishlistPermissionException
+from api.wishlist.services.db import WishlistService, wishlist_service, WishlistIsNotExistException, WishlistPermissionException
 from api.wishlist.models import Wishlist
 from sqlalchemy.orm import selectinload
 
@@ -13,6 +14,29 @@ class GiftPermissionException(BaseException):
     ...
 
 class GiftService:
+    def __init__(self, Session: AsyncSessionMaker, wishlist_service: WishlistService):
+        self.Session = Session
+        self.wishlist_service = wishlist_service
+
+    async def get_booked(self, user: User, cursor: int | None, limit: int):
+        async with self.Session() as session:
+            
+            query = (
+                select(Gift)
+                .where(Gift.booked_by_id == user.id)
+                .join(Wishlist, Gift.wishlist_id == Wishlist.id)
+                .limit(limit)
+                .options(selectinload(Gift.booked_by))
+            )
+
+            query = self.wishlist_service.filter_visible_for(query, user)
+
+            if cursor:
+                query = query.where(Gift.id > cursor)
+
+            gifts = (await session.scalars(query)).all()
+
+            return gifts
 
     async def create(
         self, 
@@ -24,7 +48,7 @@ class GiftService:
         is_priority: bool, 
         user: User
     ):
-        async with Session() as session:
+        async with self.Session() as session:
             
             wishlist = await session.get(Wishlist, wishlist_id)
 
@@ -50,14 +74,14 @@ class GiftService:
     
 
     async def book(self, id, booked_by: int | None, user: User):
-        async with Session() as session:
+        async with self.Session() as session:
 
-            gift = await session.get(Gift, id, options=[selectinload(Gift.wishlist), selectinload(Gift.booked_by)])
+            gift = await session.get(Gift, id, options=[selectinload(Gift.booked_by)])
 
             if gift == None:
                 raise GiftIsNotExistException
 
-            wishlist = await wishlist_service.get_by_id(gift.wishlist_id, user) 
+            wishlist = await self.wishlist_service.get_by_id(gift.wishlist_id, user) 
             
             if wishlist == None or (wishlist.owner_id != user.id and not wishlist.owner.are_friends_with(user)):
                 raise WishlistPermissionException
@@ -81,4 +105,4 @@ class GiftService:
 
             
         
-gift_service = GiftService()
+gift_service = GiftService(Session, wishlist_service)

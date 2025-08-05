@@ -1,5 +1,5 @@
 from asyncpg import UniqueViolationError
-from database import Session
+from database import AsyncSessionMaker, Session
 from api.user.models import User
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
@@ -12,9 +12,12 @@ class UserIsNotExistException(BaseException):
     ...
 
 class UserService:
+    def __init__(self, Session: AsyncSessionMaker):
+        self.Session = Session
+
     ''' инкапсулирует логику работы с бд над моделью юзера '''
     async def create(self, username, password, email):
-        async with Session() as session:
+        async with self.Session() as session:
 
             try:
                 user = User(username=username, password=password, email=email)    
@@ -33,7 +36,7 @@ class UserService:
             return user
         
     async def update(self, id, **kwargs):
-        async with Session() as session:
+        async with self.Session() as session:
             user = await session.get(User, id)
             if user == None:
                 raise UserIsNotExistException
@@ -46,7 +49,7 @@ class UserService:
             return user
 
     async def get(self, **kwargs):
-        async with Session() as session:
+        async with self.Session() as session:
             query = select(User)
 
             for key, value in kwargs.items():
@@ -62,4 +65,4 @@ class UserService:
             return user
 
             
-user_service = UserService()
+user_service = UserService(Session)

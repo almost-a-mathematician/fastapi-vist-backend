@@ -1,3 +1,4 @@
+from typing import List
 from pydantic import BaseModel, HttpUrl
 from api.user.schemas import UserResponse
 
@@ -31,6 +32,9 @@ class GiftFullResponse(GiftResponse):
     price: float
     description: str | None
     wishlist_id: int
+
+class GiftsFullResponse(BaseModel):
+    items: List[GiftFullResponse]
 
 class BookGift(BaseModel):
     booked_by: int | None 

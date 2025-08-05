@@ -1,5 +1,5 @@
 from typing import List
-from database import Session
+from database import AsyncSessionMaker, Session
 from api.wishlist.models import Wishlist
 from api.user.models import User
 from sqlalchemy import select
@@ -12,8 +12,10 @@ class WishlistIsNotExistException(BaseException):
 class WishlistPermissionException(BaseException):
     ...
 class WishlistService:
+    def __init__(self, Session: AsyncSessionMaker):
+        self.Session = Session
    
-    def _filter_visible_for(self, query, user: User):
+    def filter_visible_for(self, query, user: User):
         query = query.where(
             # WHERE (wishlist.archived_at != NULL) OR (wishlist.owner_id = 123)
             (Wishlist.archived_at == None) | (Wishlist.owner_id == user.id) # перегрузка оператора 
@@ -23,7 +25,7 @@ class WishlistService:
         return query
 
     async def get(self, user: User, owner_id: int, cursor: int | None, limit: int): 
-        async with Session() as session:    
+        async with self.Session() as session:    
 
             query = (
                 select(Wishlist)
@@ -37,14 +39,14 @@ class WishlistService:
             if cursor:
                 query = query.where(Wishlist.id > cursor)
                 
-            query = self._filter_visible_for(query, user)
+            query = self.filter_visible_for(query, user)
 
             wishlists = (await session.scalars(query)).all()
 
             return wishlists
         
     async def get_archived(self, user: User, cursor: int | None, limit: int):
-        async with Session() as session:
+        async with self.Session() as session:
             
             query = (
                 select(Wishlist)
@@ -58,14 +60,14 @@ class WishlistService:
             if cursor:
                 query = query.where(Wishlist.id > cursor)
 
-            query = self._filter_visible_for(query, user)
+            query = self.filter_visible_for(query, user)
 
             wishlists = (await session.scalars(query)).all()
           
             return wishlists
     
     async def get_by_friends(self, user: User, cursor: int | None, limit: int):
-        async with Session() as session:
+        async with self.Session() as session:
 
             query = (
                 select(Wishlist)
@@ -83,24 +85,24 @@ class WishlistService:
             if cursor:
                 query = query.where(Wishlist.id > cursor)
 
-            query = self._filter_visible_for(query, user)
+            query = self.filter_visible_for(query, user)
         
             wishlists = (await session.scalars(query)).all()
         
             return wishlists
         
     async def get_by_id(self, id, user: User):
-        async with Session() as session:
+        async with self.Session() as session:
 
             query = select(Wishlist).where(Wishlist.id == id).options(selectinload(Wishlist.owner).selectinload(User.friends))
-            query = self._filter_visible_for(query, user)
+            query = self.filter_visible_for(query, user)
 
             wishlist = (await session.scalars(query)).first()
 
             return wishlist
         
     async def create(self, owner: User, name: str, archived_at=None):
-        async with Session() as session:
+        async with self.Session() as session:
 
             wishlist = Wishlist(
                 name=name, 
@@ -117,7 +119,7 @@ class WishlistService:
             return wishlist
         
     async def update(self, id, updater: User, **kwargs):
-        async with Session() as session:
+        async with self.Session() as session:
             wishlist = await session.get(Wishlist, id, options=[selectinload(Wishlist.users), selectinload(Wishlist.gifts)])
 
             if wishlist == None:
@@ -136,7 +138,7 @@ class WishlistService:
             return wishlist
         
     async def update_users(self, id, updater: User, user_list: List[int]):
-        async with Session() as session:
+        async with self.Session() as session:
             wishlist = await session.get(Wishlist, id, options=[selectinload(Wishlist.users)])
         
             if wishlist is None:
@@ -156,4 +158,4 @@ class WishlistService:
             return wishlist 
 
         
-wishlist_service = WishlistService()
+wishlist_service = WishlistService(Session)

@@ -1,11 +1,21 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
-from api.gift.schemas import СreateGift, GiftFullResponse, BookGift
+from api.gift.schemas import СreateGift, GiftFullResponse, BookGift, GiftsFullResponse
+
 from api.auth.depends import AuthUserDep
 from api.gift.services.db import gift_service, WishlistIsNotExistException, WishlistPermissionException, GiftIsNotExistException, GiftPermissionException
 
 
 def init_endpoints(gift_router: APIRouter):
+
+    @gift_router.get('/gifts/booked')
+    async def get_booked(user: AuthUserDep, cursor: int = None, limit: int = 24) -> GiftsFullResponse:
+        gifts = await gift_service.get_booked(user, cursor, limit)
+
+        return JSONResponse(
+            GiftsFullResponse.model_validate({'items': gifts}, from_attributes=True)
+            .model_dump(context={'auth_user_id': user.id})
+        )
 
     @gift_router.post(
         path='/wishlists/{wishlist_id}/gifts',
