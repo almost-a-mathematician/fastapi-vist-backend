@@ -15,7 +15,11 @@ class Gift(Model):
     description: Mapped[str | None] = mapped_column(String(150), nullable=True)
     link_url: Mapped[str] = mapped_column(String(200), nullable=False) 
     is_priority: Mapped[bool] = mapped_column(default=False, nullable=False)
-    booked_by: Mapped[User | None] = relationship(cascade='all, delete')
+    booked_by: Mapped[User | None] = relationship()
     booked_by_id: Mapped[int | None] = mapped_column(ForeignKey('users.id'))
     wishlist_id: Mapped[int] = mapped_column(ForeignKey('wishlists.id'))
-    wishlist: Mapped['Wishlist'] = relationship(back_populates="gifts", cascade='all, delete')
+    wishlist: Mapped['Wishlist'] = relationship(back_populates="gifts")
+
+    @classmethod
+    def get_all_columns(cls):
+        return cls.__table__.columns.keys() + ['booked_by']

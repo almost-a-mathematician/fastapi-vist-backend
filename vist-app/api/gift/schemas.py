@@ -29,6 +29,7 @@ class GiftResponse(GiftIcon):
     booked_by: UserResponse | None 
 
 class GiftFullResponse(GiftResponse): 
+    name: str
     price: float
     description: str | None
     wishlist_id: int

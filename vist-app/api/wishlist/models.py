@@ -22,7 +22,7 @@ class Wishlist(Model):
     owner: Mapped[User] = relationship('User', cascade='all, delete')
     owner_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
     users: Mapped[List[User]] = relationship(secondary=wishlist_users_association)
-    gifts: Mapped[List[Gift]] = relationship(back_populates="wishlist")
+    gifts: Mapped[List[Gift]] = relationship(back_populates="wishlist", cascade='all, delete-orphan')
     archived_at: Mapped[datetime] = mapped_column(nullable=True)
 
     @classmethod

@@ -72,6 +72,31 @@ class GiftService:
 
         return gift
     
+    async def update(self, id, user: User, **kwargs):
+        async with self.Session() as session:
+
+            gift = await session.get(Gift, id)
+
+            if gift == None:
+                raise GiftIsNotExistException
+            
+            wishlist = await self.wishlist_service.get_by_id(gift.wishlist_id, user)
+
+            if wishlist == None:
+                raise WishlistPermissionException
+
+            if user.id != wishlist.owner_id:
+                raise GiftPermissionException
+            
+            for key, value in kwargs.items():
+                if hasattr(gift, key):
+                    setattr(gift, key, value)
+
+            await session.commit()
+            await session.refresh(gift, attribute_names=Gift.get_all_columns())
+
+            return gift
+            
 
     async def book(self, id, booked_by: int | None, user: User):
         async with self.Session() as session:
@@ -102,7 +127,26 @@ class GiftService:
             await session.refresh(gift)
 
         return gift
-
+    
+    async def delete(self, id, user: User):
+        async with self.Session() as session:
             
+            gift = await session.get(Gift, id)
+            
+            if gift == None:
+                raise GiftIsNotExistException
+            
+            wishlist = await self.wishlist_service.get_by_id(gift.wishlist_id, user)
+            
+            if wishlist == None:
+                raise WishlistPermissionException
+            
+            if user.id != wishlist.owner_id:
+                raise GiftPermissionException
+            
+            await session.delete(gift)
+            await session.commit()
+            
+            return True
         
 gift_service = GiftService(Session, wishlist_service)
