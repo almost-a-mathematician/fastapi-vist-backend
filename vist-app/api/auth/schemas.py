@@ -21,7 +21,7 @@ class Login(BaseModel):
 
     @model_validator(mode='after')
     def check_username_or_email_filled(self):
-        if (self.username == None) == (self.email == None):
+        if (self.username is None) == (self.email is None):
             raise ValueError
         
         return self

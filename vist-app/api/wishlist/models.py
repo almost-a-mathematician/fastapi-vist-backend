@@ -19,7 +19,7 @@ class Wishlist(Model):
     __tablename__ = 'wishlists'
 
     name: Mapped[str] = mapped_column(String(50), nullable=False)
-    owner: Mapped[User] = relationship('User', cascade='all, delete')
+    owner: Mapped[User] = relationship('User', back_populates='wishlists')
     owner_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
     users: Mapped[List[User]] = relationship(secondary=wishlist_users_association)
     gifts: Mapped[List[Gift]] = relationship(back_populates="wishlist", cascade='all, delete-orphan')

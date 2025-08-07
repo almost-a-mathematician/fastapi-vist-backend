@@ -96,8 +96,22 @@ def init_endpoints(wishlist_router: APIRouter):
             .model_dump(context={'auth_user_id': updater.id})
         )
     
-    
-        
+    @wishlist_router.delete(
+            path='/{id}',
+            responses={
+            404: {'description': 'in case if wishlist does not exist'},
+            403: {'description': 'in case if deleter is not the owner'} 
+        }
+    )
+    async def delete(id: int, user: AuthUserDep):
+        try:
+            wishlist = await wishlist_service.delete(id, user)
+        except WishlistIsNotExistException:
+            raise HTTPException(status_code=404)
+        except WishlistPermissionException:
+            raise HTTPException(status_code=403)
+
+        return True
 
 
 

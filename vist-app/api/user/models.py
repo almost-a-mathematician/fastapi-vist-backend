@@ -1,8 +1,11 @@
 from datetime import datetime
-from typing import List
+from typing import List, TYPE_CHECKING
 from database import Model
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Column, ForeignKey, String, Date, Table
+
+if TYPE_CHECKING:
+    from api.wishlist.models import Wishlist
 
 
 user_friend_association = Table(
@@ -28,8 +31,15 @@ class User(Model):
         primaryjoin=('User.id == user_friend_association.c.user_id'),
         secondaryjoin=('User.id == user_friend_association.c.friend_id')
     )
-    verified: Mapped[bool] = mapped_column(default=False) 
+    verified: Mapped[bool] = mapped_column(default=False)
     last_email_at: Mapped[datetime] = mapped_column(nullable=True)
+    
+
+    wishlists: Mapped[List['Wishlist']] = relationship(
+        'Wishlist',
+        back_populates='owner',
+        cascade='all, delete-orphan'
+    )
 
     def are_friends_with(self, user):
         return user.id in [friend.id for friend in self.friends]

@@ -16,6 +16,23 @@ class UserService:
         self.Session = Session
 
     ''' инкапсулирует логику работы с бд над моделью юзера '''
+    async def get(self, **kwargs):
+        async with self.Session() as session:
+            query = select(User)
+
+            for key, value in kwargs.items():
+                if hasattr(User, key):
+                    column = getattr(User, key)
+                    query = query.where(column == value)
+
+            user = (await session.scalars(query)).first()
+
+            if user is None:
+                raise UserIsNotExistException
+    
+            return user
+
+    
     async def create(self, username, password, email):
         async with self.Session() as session:
 
@@ -38,7 +55,7 @@ class UserService:
     async def update(self, id, **kwargs):
         async with self.Session() as session:
             user = await session.get(User, id)
-            if user == None:
+            if user is None:
                 raise UserIsNotExistException
             
             for key, value in kwargs.items():
@@ -46,22 +63,6 @@ class UserService:
                     setattr(user, key, value)
 
             await session.commit()
-            return user
-
-    async def get(self, **kwargs):
-        async with self.Session() as session:
-            query = select(User)
-
-            for key, value in kwargs.items():
-                if hasattr(User, key):
-                    column = getattr(User, key)
-                    query = query.where(column == value)
-
-            user = (await session.scalars(query)).first()
-
-            if user == None:
-                raise UserIsNotExistException
-    
             return user
 
             

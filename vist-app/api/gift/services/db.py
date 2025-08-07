@@ -52,7 +52,7 @@ class GiftService:
             
             wishlist = await session.get(Wishlist, wishlist_id)
 
-            if wishlist == None:
+            if wishlist is None:
                 raise WishlistIsNotExistException
             if wishlist.owner_id != user.id:
                 raise WishlistPermissionException
@@ -77,12 +77,12 @@ class GiftService:
 
             gift = await session.get(Gift, id)
 
-            if gift == None:
+            if gift is None:
                 raise GiftIsNotExistException
             
             wishlist = await self.wishlist_service.get_by_id(gift.wishlist_id, user)
 
-            if wishlist == None:
+            if wishlist is None:
                 raise WishlistPermissionException
 
             if user.id != wishlist.owner_id:
@@ -103,16 +103,16 @@ class GiftService:
 
             gift = await session.get(Gift, id, options=[selectinload(Gift.booked_by)])
 
-            if gift == None:
+            if gift is None:
                 raise GiftIsNotExistException
 
             wishlist = await self.wishlist_service.get_by_id(gift.wishlist_id, user) 
             
-            if wishlist == None or (wishlist.owner_id != user.id and not wishlist.owner.are_friends_with(user)):
+            if wishlist is None or (wishlist.owner_id != user.id and not wishlist.owner.are_friends_with(user)):
                 raise WishlistPermissionException
 
-            if booked_by != None:
-                if user.id != wishlist.owner_id and gift.booked_by_id != None:
+            if booked_by is not None:
+                if user.id != wishlist.owner_id and gift.booked_by_id is not None:
                     raise GiftPermissionException
                 
                 gift.booked_by_id = user.id
@@ -133,12 +133,12 @@ class GiftService:
             
             gift = await session.get(Gift, id)
             
-            if gift == None:
+            if gift is None:
                 raise GiftIsNotExistException
             
             wishlist = await self.wishlist_service.get_by_id(gift.wishlist_id, user)
             
-            if wishlist == None:
+            if wishlist is None:
                 raise WishlistPermissionException
             
             if user.id != wishlist.owner_id:

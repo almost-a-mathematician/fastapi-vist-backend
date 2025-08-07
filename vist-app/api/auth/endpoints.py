@@ -69,9 +69,9 @@ def init_endpoints(auth_router: APIRouter):
     @auth_router.post('/login')
     async def login(payload: Login) -> TokenResponse:
         try:
-            if payload.username != None:
+            if payload.username is not None:
                 user = await user_service.get(username=payload.username) 
-            elif payload.email != None:
+            elif payload.email is not None:
                 user = await user_service.get(email=payload.email) 
         except UserIsNotExistException:
             raise HTTPException(status_code=404)

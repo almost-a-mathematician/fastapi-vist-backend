@@ -16,7 +16,7 @@ class UserMailSender:
     
     async def create_and_send(self, user: User, template_filename, template_params):
 
-        if user.last_email_at != None and user.last_email_at + timedelta(minutes=self.send_delay) > datetime.now():
+        if user.last_email_at is not None and user.last_email_at + timedelta(minutes=self.send_delay) > datetime.now():
             raise SendDelayException
         
         await self.mail_sender.create_and_send(user.email, template_filename, template_params)

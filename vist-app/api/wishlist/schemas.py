@@ -41,7 +41,7 @@ class WishlistSerializer(BaseModel):
     def serialize_users(self, users, info):
         try:
             auth_user_id = info.context.get('auth_user_id')
-            if auth_user_id == None:
+            if auth_user_id is None:
                 raise Exception
             
             return users if auth_user_id == self.owner_id else []

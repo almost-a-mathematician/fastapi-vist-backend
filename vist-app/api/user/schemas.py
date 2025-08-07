@@ -22,7 +22,7 @@ class UserResponse(BaseModel):
     def serialize_email(self, email, info):
         try:
             auth_user_id = info.context.get('auth_user_id')
-            if auth_user_id == None:
+            if auth_user_id is None:
                 raise Exception
             
             return email if auth_user_id == self.id else None
@@ -34,7 +34,7 @@ class UserResponse(BaseModel):
     def serialize_birth_date(self, birth_date, info):
         try:
             auth_user_id = info.context.get('auth_user_id')
-            if auth_user_id == None:
+            if auth_user_id is None:
                 raise Exception
             
             return birth_date if self.is_hidden_bd == False or auth_user_id == self.id else None
