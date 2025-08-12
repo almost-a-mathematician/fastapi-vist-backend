@@ -94,7 +94,7 @@ def init_endpoints(gift_router: APIRouter):
     )
     async def delete(id: int, user: AuthUserDep):
         try:
-            gift = await gift_service.delete(id, user)
+            await gift_service.delete(id, user)
         except GiftIsNotExistException:
             raise HTTPException(status_code=404)
         except (GiftPermissionException, WishlistPermissionException):

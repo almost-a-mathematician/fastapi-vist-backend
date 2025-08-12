@@ -1,14 +1,21 @@
-from asyncpg import UniqueViolationError
 from database import AsyncSessionMaker, Session
 from api.user.models import User
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select
+from sqlalchemy import select, update
+from shared.errors import is_unique_error
+from api.auth.services.password_manager import password_manager
 
 class UserExistsException(BaseException): 
     def __init__(self, column: str):
         self.column = column
 
-class UserIsNotExistException(BaseException): 
+class UserDoesNotExistException(BaseException): 
+    ...
+
+class UserPermissionException(BaseException):
+    ...
+
+class DuplicateUsernameException(BaseException):
     ...
 
 class UserService:
@@ -28,7 +35,7 @@ class UserService:
             user = (await session.scalars(query)).first()
 
             if user is None:
-                raise UserIsNotExistException
+                raise UserDoesNotExistException
     
             return user
 
@@ -42,28 +49,59 @@ class UserService:
                 await session.commit()
                 await session.refresh(user)
             except IntegrityError as e: 
+                original_error = is_unique_error(e)
 
-                original_error = e.__cause__.__cause__
-
-                if isinstance(original_error, UniqueViolationError):
+                if original_error is not None:
                     raise UserExistsException(column='email' if '(email)' in str(original_error) else 'username')       
                 else:
                     raise e
     
             return user
         
-    async def update(self, id, **kwargs):
+    async def update(self, id: int, updater: User, **kwargs):
+        async with self.Session() as session:
+            user = await session.get(User, id)
+
+            try:
+                if user is None:
+                    raise UserDoesNotExistException
+                if user.id is not updater.id:
+                    raise UserPermissionException
+                for key, value in kwargs.items():
+                    if hasattr(user, key):
+                        if key is 'password':
+                            value = password_manager.generate(value)
+                        setattr(user, key, value)
+
+                await session.commit()
+                await session.refresh(user)
+            except  IntegrityError as e: 
+                original_error = is_unique_error(e)
+
+                if original_error is not None:
+                    raise DuplicateUsernameException      
+                else:
+                    raise e
+        
+            return user
+        
+    async def delete(self, id: int, deleter: User):
         async with self.Session() as session:
             user = await session.get(User, id)
             if user is None:
-                raise UserIsNotExistException
+                raise UserDoesNotExistException
+            if user.id is not deleter.id:
+                raise UserPermissionException
             
-            for key, value in kwargs.items():
-                if hasattr(user, key):
-                    setattr(user, key, value)
-
+            from api.gift.models import Gift
+            
+            await session.execute(
+                update(Gift)
+                .where(Gift.booked_by_id == id)
+                .values(booked_by_id=None)
+            )
+    
+            await session.delete(user)
             await session.commit()
-            return user
-
             
 user_service = UserService(Session)

@@ -3,11 +3,11 @@ from pydantic import BaseModel, EmailStr, field_serializer
 
 
 class UpdateUser(BaseModel):
-    username: str | None
-    password: str | None
+    username: str | None = None
+    password: str | None = None
     # profile_pic в будущем провалидировать вручную (функция в user/endpoints)
-    birth_date: date | None
-    is_hidden_bd: bool | None
+    birth_date: date | None = None
+    is_hidden_bd: bool | None = None
 
 class UserResponse(BaseModel):
     id: int

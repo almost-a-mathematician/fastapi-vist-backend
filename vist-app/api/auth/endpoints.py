@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from api.auth.schemas import ForgetPassword, Login, Register, ResetPassword, TokenResponse, DuplicateUserResponse
 from api.auth.services.password_manager import password_manager
-from api.user.services.db import UserExistsException, UserIsNotExistException, user_service
+from api.user.services.db import UserExistsException, UserDoesNotExistException, user_service
 from api.user.services.user_mail_sender import user_mail_sender, SendDelayException
 from api.auth.services.token_manager import email_token, access_token, refresh_token
 import os
@@ -73,7 +73,7 @@ def init_endpoints(auth_router: APIRouter):
                 user = await user_service.get(username=payload.username) 
             elif payload.email is not None:
                 user = await user_service.get(email=payload.email) 
-        except UserIsNotExistException:
+        except UserDoesNotExistException:
             raise HTTPException(status_code=404)
         
         if user.verified != True:
@@ -121,7 +121,7 @@ def init_endpoints(auth_router: APIRouter):
     async def forget_password(payload: ForgetPassword) -> Literal[True]:
         try:
             user = await user_service.get(email=payload.email) 
-        except UserIsNotExistException:
+        except UserDoesNotExistException:
             return True
         
         token = email_token.create(id=user.id)

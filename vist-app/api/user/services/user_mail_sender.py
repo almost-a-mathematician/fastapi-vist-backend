@@ -21,6 +21,6 @@ class UserMailSender:
         
         await self.mail_sender.create_and_send(user.email, template_filename, template_params)
  
-        await user_service.update(user.id, last_email_at=datetime.now())
+        await user_service.update(user.id, user, last_email_at=datetime.now())
    
 user_mail_sender = UserMailSender(mail_sender, send_delay=int(os.getenv('USER_MAIL_SEND_DELAY')))
