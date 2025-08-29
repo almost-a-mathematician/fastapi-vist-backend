@@ -7,7 +7,7 @@ from api.user.services.db import UserExistsException, UserDoesNotExistException,
 from api.user.services.user_mail_sender import user_mail_sender, SendDelayException
 from api.auth.services.token_manager import email_token, access_token, refresh_token
 import os
-from api.user.schemas import UserResponse
+from api.user.schemas import RegisterResponse
 from shared.fix_exec_time import fix_exec_time
 
 
@@ -20,7 +20,7 @@ def init_endpoints(auth_router: APIRouter):
             409: {'model': DuplicateUserResponse}
         }
     )
-    async def register(payload: Register) -> UserResponse:
+    async def register(payload: Register) -> RegisterResponse:
         password_hash = password_manager.generate(payload.password)
 
         try:
@@ -48,9 +48,11 @@ def init_endpoints(auth_router: APIRouter):
             )
         except SendDelayException:
             raise HTTPException(status_code=429)
-        
+
         return JSONResponse( 
-            UserResponse.model_validate(user, from_attributes=True).model_dump(context={'auth_user_id': user.id})
+            RegisterResponse
+                .model_validate({'user': user, 'avatar_token': access_token.create(id=user.id, lifetime=1)}, from_attributes=True)
+                .model_dump(context={'auth_user_id': user.id})
         )
 
 

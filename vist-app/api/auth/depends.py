@@ -1,13 +1,15 @@
 from typing import Annotated
 from fastapi import Depends, Header, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jwt import ExpiredSignatureError, PyJWTError
 from api.auth.services.token_manager import access_token
 from api.user.services.db import UserDoesNotExistException, user_service
 from api.user.models import User
 
+auth_schema = HTTPBearer()
 
-async def get_user_by_token(authorization = Header()):
-    type, token = authorization.split(' ')
+async def get_user_by_token(auth: HTTPAuthorizationCredentials = Depends(auth_schema)):
+    token = auth.credentials
 
     try:
         jwt_claims = access_token.verify(token)

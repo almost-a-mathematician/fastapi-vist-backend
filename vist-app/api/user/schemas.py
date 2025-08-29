@@ -42,7 +42,9 @@ class UserResponse(BaseModel):
         except:
             raise Exception('Context is not defined')
         
-    
+class RegisterResponse(BaseModel):
+    user: UserResponse
+    avatar_token: str
 
             
             

@@ -5,6 +5,8 @@ from api.gift.models import Gift
 from api.wishlist.services.db import WishlistService, wishlist_service, WishlistIsNotExistException, WishlistPermissionException
 from api.wishlist.models import Wishlist
 from sqlalchemy.orm import selectinload
+from api.media.services.media import media_service, MediaService
+from api.media.schemas import validate_file
 
 
 class GiftIsNotExistException(BaseException):
@@ -14,9 +16,10 @@ class GiftPermissionException(BaseException):
     ...
 
 class GiftService:
-    def __init__(self, Session: AsyncSessionMaker, wishlist_service: WishlistService):
+    def __init__(self, Session: AsyncSessionMaker, wishlist_service: WishlistService,  media_service: MediaService):
         self.Session = Session
         self.wishlist_service = wishlist_service
+        self.media_service = media_service
 
     async def get_booked(self, user: User, cursor: int | None, limit: int):
         async with self.Session() as session:
@@ -72,7 +75,7 @@ class GiftService:
 
         return gift
     
-    async def update(self, id, user: User, **kwargs):
+    async def update(self, id: int, user: User, **kwargs):
         async with self.Session() as session:
 
             gift = await session.get(Gift, id)
@@ -89,6 +92,15 @@ class GiftService:
                 raise GiftPermissionException
             
             for key, value in kwargs.items():
+                if key == 'img': 
+                    if gift.img is not None:
+                        await self.media_service.delete(gift.img)   
+                        
+                    if value is not None:
+                        validate_file(file=value, max_size=1500000, types=['image/png', 'image/jpeg', 'image/jpg', 'png', 'jpeg', 'jpg'])
+                        
+                        value = await self.media_service.upload(await value.read())
+
                 if hasattr(gift, key):
                     setattr(gift, key, value)
 
@@ -149,4 +161,4 @@ class GiftService:
             
             return True
         
-gift_service = GiftService(Session, wishlist_service)
+gift_service = GiftService(Session, wishlist_service, media_service)

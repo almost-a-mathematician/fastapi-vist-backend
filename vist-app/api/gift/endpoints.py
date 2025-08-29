@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, Body
 from fastapi.responses import JSONResponse
 from api.gift.schemas import UpdateGift, СreateGift, GiftFullResponse, BookGift, GiftsFullResponse
 
@@ -45,11 +45,51 @@ def init_endpoints(gift_router: APIRouter):
             .model_dump(context={'auth_user_id': user.id})
         )
 
-    @gift_router.put(
-            path='/gifts/{id}/book/',
+    @gift_router.post(
+            path='/gifts/{id}/image',
             responses={
+                404: {'description': 'in case if gift does not exist'},
+                403: {'description': 'in case if updater has no permission for his action'} 
+        }
+    )
+    async def set_img(id: int, user: AuthUserDep, image: UploadFile):
+        try:
+            gift = await gift_service.update(id, user, img=image)
+        except GiftIsNotExistException:
+            raise HTTPException(status_code=404)
+        except(WishlistPermissionException, GiftPermissionException):
+            raise HTTPException(status_code=403)
+
+        return JSONResponse(
+            GiftFullResponse
+            .model_validate(gift, from_attributes=True)
+            .model_dump(context={'auth_user_id': user.id})
+        )
+
+    
+    @gift_router.delete(
+        path='/gifts/{id}/image',
+        responses={
             404: {'description': 'in case if gift does not exist'},
-            403: {'description': 'in case if booker has no permission for his action'} 
+            403: {'description': 'in case if updater has no permission for his action'} 
+        }
+    )
+    async def delete_img(id: int, user: AuthUserDep):
+        try:
+            await gift_service.update(id, user, img=None)
+        except GiftIsNotExistException:
+            raise HTTPException(status_code=404)
+        except(WishlistPermissionException, GiftPermissionException):
+            raise HTTPException(status_code=403)
+        
+        return True
+
+
+    @gift_router.put(
+            path='/gifts/{id}/book',
+            responses={
+                404: {'description': 'in case if gift does not exist'},
+                403: {'description': 'in case if booker has no permission for his action'} 
         }
     )
     async def book(id: int, payload: BookGift, user: AuthUserDep):
@@ -68,8 +108,8 @@ def init_endpoints(gift_router: APIRouter):
     @gift_router.patch(
             path='/gifts/{id}',
             responses={
-            404: {'description': 'in case if gift does not exist'},
-            403: {'description': 'in case if user has no permission for his action'} 
+                404: {'description': 'in case if gift does not exist'},
+                403: {'description': 'in case if user has no permission for his action'} 
         }
     )
     async def update(id: int, user: AuthUserDep, payload: UpdateGift):
@@ -87,9 +127,9 @@ def init_endpoints(gift_router: APIRouter):
        
     @gift_router.delete(
             path='/gifts/{id}',
-             responses={
-            404: {'description': 'in case if gift does not exist'},
-            403: {'description': 'in case if user has no permission for his action'} 
+            responses={
+                404: {'description': 'in case if gift does not exist'},
+                403: {'description': 'in case if user has no permission for his action'} 
         }
     )
     async def delete(id: int, user: AuthUserDep):

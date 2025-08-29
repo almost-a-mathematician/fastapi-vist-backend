@@ -12,8 +12,10 @@ class TokenManager:
     def verify(self, token):
         return decode(token, self.secret, algorithms=('HS256'))
 
-    def create(self, id):
-       return encode({'sub': str(id), 'exp': datetime.now(tz=timezone.utc) + timedelta(minutes=self.lifetime)}, self.secret, algorithm='HS256')
+    def create(self, id, lifetime: int | None = None):
+       if lifetime is None:
+           lifetime = self.lifetime
+       return encode({'sub': str(id), 'exp': datetime.now(tz=timezone.utc) + timedelta(minutes=lifetime)}, self.secret, algorithm='HS256')
 
 
 email_token = TokenManager(
@@ -30,5 +32,6 @@ refresh_token = TokenManager(
     secret=os.getenv('REFRESH_TOKEN_SECRET'), 
     lifetime=int(os.getenv('REFRESH_TOKEN_LIFETIME'))
 )
+
 
 

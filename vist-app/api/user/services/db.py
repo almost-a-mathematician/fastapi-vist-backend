@@ -4,6 +4,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, update
 from shared.errors import is_unique_error
 from api.auth.services.password_manager import password_manager
+from api.media.services.media import media_service, MediaService
+from api.media.schemas import validate_file
+
 
 class UserExistsException(BaseException): 
     def __init__(self, column: str):
@@ -19,8 +22,9 @@ class DuplicateUsernameException(BaseException):
     ...
 
 class UserService:
-    def __init__(self, Session: AsyncSessionMaker):
+    def __init__(self, Session: AsyncSessionMaker, media_service: MediaService):
         self.Session = Session
+        self.media_service = media_service
 
     ''' инкапсулирует логику работы с бд над моделью юзера '''
     async def get(self, **kwargs):
@@ -68,13 +72,22 @@ class UserService:
                 if user.id is not updater.id:
                     raise UserPermissionException
                 for key, value in kwargs.items():
+                    if key == 'password':
+                        value = password_manager.generate(value)
+                    if key == 'profile_pic': 
+                        if user.profile_pic is not None:
+                            await self.media_service.delete(user.profile_pic)
+
+                        if value is not None:
+                            validate_file(file=value, max_size=1500000, types=['image/png', 'image/jpeg', 'image/jpg', 'png', 'jpeg', 'jpg'])
+                            value = await self.media_service.upload(await value.read())
+
                     if hasattr(user, key):
-                        if key is 'password':
-                            value = password_manager.generate(value)
                         setattr(user, key, value)
 
                 await session.commit()
                 await session.refresh(user)
+
             except  IntegrityError as e: 
                 original_error = is_unique_error(e)
 
@@ -104,4 +117,4 @@ class UserService:
             await session.delete(user)
             await session.commit()
             
-user_service = UserService(Session)
+user_service = UserService(Session, media_service)

@@ -18,7 +18,7 @@ class WishlistService:
     def filter_visible_for(self, query, user: User):
         query = query.where(
             # WHERE (wishlist.archived_at != NULL) OR (wishlist.owner_id = 123)
-            (Wishlist.archived_at is None) | (Wishlist.owner_id == user.id) # перегрузка оператора 
+            (Wishlist.archived_at == None) | (Wishlist.owner_id == user.id) # перегрузка оператора 
         ).where(
             ~Wishlist.users.any() | Wishlist.users.any(User.id == user.id)
         ) 
@@ -30,7 +30,7 @@ class WishlistService:
             query = (
                 select(Wishlist)
                 .where(Wishlist.owner_id == owner_id)
-                .where(Wishlist.archived_at is None)
+                .where(Wishlist.archived_at == None)
                 .options(selectinload(Wishlist.users), selectinload(Wishlist.gifts))   
                 .order_by(Wishlist.id)
                 .limit(limit)
