@@ -3,7 +3,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, AsyncSession
 
 
-
 class Model(DeclarativeBase):
     id: Mapped[int] = mapped_column(primary_key=True)
 
