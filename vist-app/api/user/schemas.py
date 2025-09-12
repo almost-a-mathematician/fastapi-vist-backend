@@ -15,7 +15,7 @@ class UserResponse(BaseModel):
     profile_pic: str | None
     birth_date: date | None
     is_hidden_bd: bool
-    email: EmailStr | None
+    email: EmailStr | None  
     # friends
 
     @field_serializer('email')

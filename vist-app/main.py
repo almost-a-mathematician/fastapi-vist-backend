@@ -1,6 +1,5 @@
 from dotenv import load_dotenv
 
-
 load_dotenv() # получаем доступ к переменным .env
 
 
