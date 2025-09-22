@@ -9,6 +9,7 @@ import json
 def init_endpoints(search_router: APIRouter):
 
     @search_router.get('/')
+    
     async def search(search: str, user: AuthUserDep, request: Request) -> SearchResponse:
         cache_key = request.url.path + request.url.query
 
@@ -16,7 +17,6 @@ def init_endpoints(search_router: APIRouter):
 
         if cache is not None:
             dumped_model = cache
-            print("from cache")
         else:
             search_result = await search_service.search(search, user)
 
@@ -26,7 +26,6 @@ def init_endpoints(search_router: APIRouter):
             )
 
             await cache_manager.set(cache_key, dumped_model, 60)
-            print("from db")
         
         return JSONResponse(json.loads(dumped_model))
     

@@ -37,6 +37,41 @@ services:
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
+    env_file:
+      - .env
+    
+  minio:
+    container_name: vist-minio
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"      
+      - "9001:9001" # консоль управления
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    restart: always
+    env_file:
+      - .env
   
+  minio-init:
+    container_name: vist-minio-init
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 10;
+      /usr/bin/mc alias set vistminio http://minio:9000 ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY};
+      /usr/bin/mc mb vistminio/${MINIO_BUCKET_NAME} --ignore-existing;
+      /usr/bin/mc anonymous set public vistminio/${MINIO_BUCKET_NAME};
+      exit 0;
+      "
+    env_file:
+      - .env
+
 volumes:
   redis_data: 
+  minio_data:
