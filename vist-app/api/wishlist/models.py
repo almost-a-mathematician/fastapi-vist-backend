@@ -29,4 +29,7 @@ class Wishlist(Model):
     def get_all_columns(cls):
         return cls.__table__.columns.keys() + ['users', 'gifts']
 
+    def __str__(self):
+        return self.name
     
+   

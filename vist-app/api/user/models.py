@@ -40,9 +40,14 @@ class User(Model):
         back_populates='owner',
         cascade='all, delete-orphan'
     )
+    is_admin: Mapped[bool] = mapped_column(default=False)
+
 
     def are_friends_with(self, user):
         return user.id in [friend.id for friend in self.friends]
+
+    def __str__(self):
+        return self.username
     
    
 

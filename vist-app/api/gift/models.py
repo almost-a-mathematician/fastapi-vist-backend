@@ -23,3 +23,6 @@ class Gift(Model):
     @classmethod
     def get_all_columns(cls):
         return cls.__table__.columns.keys() + ['booked_by']
+    
+    def __str__(self):
+        return self.name
