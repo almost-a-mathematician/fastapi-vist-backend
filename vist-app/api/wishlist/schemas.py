@@ -1,8 +1,8 @@
 from pydantic import BaseModel, field_serializer, RootModel, field_validator
 from datetime import datetime
 from typing import List
-from api.user.schemas import UserResponse
-from api.gift.schemas import GiftIcon
+from api.user.schemas import UserSerializer
+from api.gift.schemas import GiftIconSerializer
 
 
 class ArchivedAtField():
@@ -24,13 +24,13 @@ class UpdateWishlistUsers(RootModel):
 class WishlistSerializer(BaseModel):
     id: int
     name: str
-    users: List[UserResponse]
-    gifts: List[GiftIcon]
+    users: List[UserSerializer]
+    gifts: List[GiftIconSerializer]
     owner_id: int
     archived_at: datetime | None
 
     @field_serializer('gifts')
-    def serialize_gifts(self, gifts: List['GiftIcon']):
+    def serialize_gifts(self, gifts: List['GiftIconSerializer']):
         return gifts[:4]
     
     @field_serializer('archived_at')
@@ -48,5 +48,5 @@ class WishlistSerializer(BaseModel):
         except:
             raise Exception('Context is not defined')
         
-class WishlistsSerializer(BaseModel):
+class WishlistsListSerializer(BaseModel):
     items: List[WishlistSerializer]

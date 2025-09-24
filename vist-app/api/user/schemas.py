@@ -1,22 +1,21 @@
 from datetime import date
 from pydantic import BaseModel, EmailStr, field_serializer
+from typing import List
 
 
 class UpdateUser(BaseModel):
     username: str | None = None
     password: str | None = None
-    # profile_pic в будущем провалидировать вручную (функция в user/endpoints)
     birth_date: date | None = None
     is_hidden_bd: bool | None = None
 
-class UserResponse(BaseModel):
+class UserSerializer(BaseModel):
     id: int
     username: str
     profile_pic: str | None
     birth_date: date | None
     is_hidden_bd: bool
     email: EmailStr | None  
-    # friends
 
     @field_serializer('email')
     def serialize_email(self, email, info):
@@ -37,16 +36,12 @@ class UserResponse(BaseModel):
             if auth_user_id is None:
                 raise Exception
             
-            return birth_date if self.is_hidden_bd == False or auth_user_id == self.id else None
+            return str(birth_date) if self.is_hidden_bd == False or auth_user_id == self.id else None
      
         except:
             raise Exception('Context is not defined')
         
-class RegisterResponse(BaseModel):
-    user: UserResponse
-    avatar_token: str
-
-            
-            
+class FullUserSerializer(UserSerializer):
+    friends: List[UserSerializer]
 
 

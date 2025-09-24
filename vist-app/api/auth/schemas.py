@@ -1,5 +1,6 @@
 from typing import Literal, Optional
 from pydantic import BaseModel, EmailStr, model_validator
+from api.user.schemas import UserSerializer
 
 
 class Register(BaseModel):
@@ -7,13 +8,6 @@ class Register(BaseModel):
     email: EmailStr
     password: str
 
-class DuplicateUserResponse(BaseModel):
-    column: Literal['email', 'username'] 
-
-class TokenResponse(BaseModel):
-    access: str
-    refresh: str
-    
 class Login(BaseModel):
     username: str = None
     email: EmailStr = None
@@ -29,7 +23,18 @@ class Login(BaseModel):
 class ForgetPassword(BaseModel):
     email: EmailStr
 
-
 class ResetPassword(BaseModel):
     password: str
+
+class RegisterSerializer(BaseModel):
+    user: UserSerializer
+    avatar_token: str
+
+class DuplicateUserSerializer(BaseModel):
+    column: Literal['email', 'username'] 
+
+class TokensSerializer(BaseModel):
+    access: str
+    refresh: str
+    
 

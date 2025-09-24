@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 from api.auth.depends import AuthUserDep
-from api.user.schemas import UserResponse, UpdateUser
+from api.user.schemas import UserSerializer, UpdateUser, FullUserSerializer
 from api.user.services.db import DuplicateUsernameException, UserPermissionException, user_service, UserDoesNotExistException
 from api.media.services.media import media_service
 from api.media.schemas import validate_file
@@ -15,14 +15,14 @@ def init_endpoints(user_router: APIRouter):
             404: {'description': 'in case if user does not exist'}
         }
     )
-    async def get(id: int, user: AuthUserDep) -> UserResponse:
+    async def get(id: int, user: AuthUserDep) -> FullUserSerializer:
         try:
             found_user = await user_service.get(id=id)
         except UserDoesNotExistException:
             raise HTTPException(status_code=404)
         
         return JSONResponse(
-            UserResponse
+            FullUserSerializer
             .model_validate(found_user, from_attributes=True)
             .model_dump(context={'auth_user_id': user.id})
         )
@@ -44,7 +44,7 @@ def init_endpoints(user_router: APIRouter):
             raise HTTPException(status_code=403)
 
         return JSONResponse(
-            UserResponse
+            UserSerializer
             .model_validate(user, from_attributes=True)
             .model_dump(context={'auth_user_id': user.id})
         )
@@ -75,7 +75,7 @@ def init_endpoints(user_router: APIRouter):
             409: {'desctiption': 'duplicate username'}
         }
     )
-    async def update(id: int, updater: AuthUserDep, payload: UpdateUser) -> UserResponse:
+    async def update(id: int, updater: AuthUserDep, payload: UpdateUser) -> FullUserSerializer:
         try:
             user = await user_service.update(id, updater, **payload.model_dump(exclude_unset=True))
         except UserDoesNotExistException:
@@ -86,7 +86,7 @@ def init_endpoints(user_router: APIRouter):
             raise HTTPException(status_code=409)
         
         return JSONResponse(
-            UserResponse
+            FullUserSerializer
             .model_validate(user, from_attributes=True)
             .model_dump(context={'auth_user_id': user.id})
         )

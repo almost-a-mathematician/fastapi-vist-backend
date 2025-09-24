@@ -6,6 +6,7 @@ from shared.errors import is_unique_error
 from api.auth.services.password_manager import password_manager
 from api.media.services.media import media_service, MediaService
 from api.media.schemas import validate_file
+from sqlalchemy.orm import selectinload
 
 
 class UserExistsException(BaseException): 
@@ -29,7 +30,7 @@ class UserService:
     ''' инкапсулирует логику работы с бд над моделью юзера '''
     async def get(self, **kwargs):
         async with self.Session() as session:
-            query = select(User)
+            query = select(User).options(selectinload(User.friends))
 
             for key, value in kwargs.items():
                 if hasattr(User, key):
@@ -86,7 +87,7 @@ class UserService:
                         setattr(user, key, value)
 
                 await session.commit()
-                await session.refresh(user)
+                await session.refresh(user, attribute_names=User.get_all_columns())
 
             except  IntegrityError as e: 
                 original_error = is_unique_error(e)

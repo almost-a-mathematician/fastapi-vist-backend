@@ -11,12 +11,10 @@ class MediaService(abc.ABC):
 
     @abc.abstractmethod
     async def upload(self, img: bytes) -> str:
-        # async def upload bytes: -> str(file_id) при первой загрузке картинки
         ...
 
     @abc.abstractmethod
     async def download(self, id: str) -> bytes | None:
-        # async def download id: -> bytes
         ...
 
     @abc.abstractmethod

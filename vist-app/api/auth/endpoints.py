@@ -1,15 +1,13 @@
 from typing import Literal
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
-from api.auth.schemas import ForgetPassword, Login, Register, ResetPassword, TokenResponse, DuplicateUserResponse
+from api.auth.schemas import ForgetPassword, Login, Register, ResetPassword, TokensSerializer, DuplicateUserSerializer, RegisterSerializer
 from api.auth.services.password_manager import password_manager
 from api.user.services.db import UserExistsException, UserDoesNotExistException, user_service
 from api.user.services.user_mail_sender import user_mail_sender, SendDelayException
 from api.auth.services.token_manager import email_token, access_token, refresh_token
 import os
-from api.user.schemas import RegisterResponse
 from shared.fix_exec_time import fix_exec_time
-
 
 
 def init_endpoints(auth_router: APIRouter):
@@ -17,10 +15,10 @@ def init_endpoints(auth_router: APIRouter):
     @auth_router.post(
         path='/register',
         responses={
-            409: {'model': DuplicateUserResponse}
+            409: {'model': DuplicateUserSerializer}
         }
     )
-    async def register(payload: Register) -> RegisterResponse:
+    async def register(payload: Register) -> RegisterSerializer:
         password_hash = password_manager.generate(payload.password)
 
         try:
@@ -32,7 +30,7 @@ def init_endpoints(auth_router: APIRouter):
         except UserExistsException as e:
             return JSONResponse(
                 status_code=409, 
-                content=DuplicateUserResponse(column=e.column).model_dump()
+                content=DuplicateUserSerializer(column=e.column).model_dump()
             )
         
         token = email_token.create(id=user.id)
@@ -50,14 +48,14 @@ def init_endpoints(auth_router: APIRouter):
             raise HTTPException(status_code=429)
 
         return JSONResponse( 
-            RegisterResponse
+            RegisterSerializer
                 .model_validate({'user': user, 'avatar_token': access_token.create(id=user.id, lifetime=1)}, from_attributes=True)
                 .model_dump(context={'auth_user_id': user.id})
         )
 
 
     @auth_router.post('/verify')
-    async def verify(token) -> TokenResponse:
+    async def verify(token) -> TokensSerializer:
         try:
             jwt_claims = email_token.verify(token)
         except:
@@ -69,7 +67,7 @@ def init_endpoints(auth_router: APIRouter):
 
 
     @auth_router.post('/login')
-    async def login(payload: Login) -> TokenResponse:
+    async def login(payload: Login) -> TokensSerializer:
         try:
             if payload.username is not None:
                 user = await user_service.get(username=payload.username) 
@@ -106,7 +104,7 @@ def init_endpoints(auth_router: APIRouter):
     
 
     @auth_router.post('/refresh')
-    async def refresh(token) -> TokenResponse:
+    async def refresh(token) -> TokensSerializer:
         try:
             jwt_claims = refresh_token.verify(token)
         except:

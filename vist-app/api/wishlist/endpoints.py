@@ -2,40 +2,40 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from api.auth.depends import AuthUserDep
 from api.wishlist.services.db import wishlist_service, WishlistPermissionException, WishlistIsNotExistException
-from api.wishlist.schemas import WishlistsSerializer, WishlistSerializer, CreateWishlist, UpdateWishlist, UpdateWishlistUsers
+from api.wishlist.schemas import WishlistsListSerializer, WishlistSerializer, CreateWishlist, UpdateWishlist, UpdateWishlistUsers
 
 
 def init_endpoints(wishlist_router: APIRouter):
 
     @wishlist_router.get('/')
-    async def get(user: AuthUserDep, owner: int, cursor: int = None, limit: int = 24) -> WishlistsSerializer:
+    async def get(user: AuthUserDep, owner: int, cursor: int = None, limit: int = 24) -> WishlistsListSerializer:
 
         wishlists = await wishlist_service.get(user, owner, cursor, limit)
     
         return JSONResponse(
-            WishlistsSerializer
+            WishlistsListSerializer
             .model_validate({'items': wishlists}, from_attributes=True)
             .model_dump(context={'auth_user_id': user.id})
         )
     
     @wishlist_router.get('/archived')
-    async def get_archived(owner: AuthUserDep, cursor: int = None, limit: int = 24) -> WishlistsSerializer:
+    async def get_archived(owner: AuthUserDep, cursor: int = None, limit: int = 24) -> WishlistsListSerializer:
 
         wishlists = await wishlist_service.get_archived(owner, cursor, limit)
 
         return JSONResponse(
-            WishlistsSerializer
+            WishlistsListSerializer
             .model_validate({'items': wishlists}, from_attributes=True)
             .model_dump(context={'auth_user_id': owner.id})
         )
     
     @wishlist_router.get('/friends')
-    async def get_by_friends(user: AuthUserDep, cursor: int = None, limit: int = 24) -> WishlistsSerializer:
+    async def get_by_friends(user: AuthUserDep, cursor: int = None, limit: int = 24) -> WishlistsListSerializer:
 
         wishlists = await wishlist_service.get_by_friends(user, cursor, limit)
 
         return JSONResponse(
-            WishlistsSerializer
+            WishlistsListSerializer
             .model_validate({'items': wishlists}, from_attributes=True)
             .model_dump(context={'auth_user_id': user.id})
         )

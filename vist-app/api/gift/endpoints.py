@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, UploadFile, Body
 from fastapi.responses import JSONResponse
-from api.gift.schemas import UpdateGift, СreateGift, GiftFullResponse, BookGift, GiftsFullResponse
+from api.gift.schemas import UpdateGift, СreateGift, FullGiftSerializer, BookGift, FullGiftsListSerializer
 
 from api.auth.depends import AuthUserDep
 from api.gift.services.db import gift_service, WishlistIsNotExistException, WishlistPermissionException, GiftIsNotExistException, GiftPermissionException
@@ -9,11 +9,11 @@ from api.gift.services.db import gift_service, WishlistIsNotExistException, Wish
 def init_endpoints(gift_router: APIRouter):
 
     @gift_router.get('/gifts/booked')
-    async def get_booked(user: AuthUserDep, cursor: int = None, limit: int = 24) -> GiftsFullResponse:
+    async def get_booked(user: AuthUserDep, cursor: int = None, limit: int = 24) -> FullGiftsListSerializer:
         gifts = await gift_service.get_booked(user, cursor, limit)
 
         return JSONResponse(
-            GiftsFullResponse.model_validate({'items': gifts}, from_attributes=True)
+            FullGiftsListSerializer.model_validate({'items': gifts}, from_attributes=True)
             .model_dump(context={'auth_user_id': user.id})
         )
 
@@ -24,7 +24,7 @@ def init_endpoints(gift_router: APIRouter):
             403: {'description': 'in case if updater is not the owner'} 
         }
     )
-    async def create(wishlist_id: int, payload: СreateGift, user: AuthUserDep) -> GiftFullResponse:
+    async def create(wishlist_id: int, payload: СreateGift, user: AuthUserDep) -> FullGiftSerializer:
         try:
             gift = await gift_service.create(
                 wishlist_id=wishlist_id, 
@@ -41,7 +41,7 @@ def init_endpoints(gift_router: APIRouter):
             raise HTTPException(status_code=403)
         
         return JSONResponse(
-            GiftFullResponse.model_validate(gift, from_attributes=True)
+            FullGiftSerializer.model_validate(gift, from_attributes=True)
             .model_dump(context={'auth_user_id': user.id})
         )
 
@@ -61,7 +61,7 @@ def init_endpoints(gift_router: APIRouter):
             raise HTTPException(status_code=403)
 
         return JSONResponse(
-            GiftFullResponse
+            FullGiftSerializer
             .model_validate(gift, from_attributes=True)
             .model_dump(context={'auth_user_id': user.id})
         )
@@ -101,7 +101,7 @@ def init_endpoints(gift_router: APIRouter):
             raise HTTPException(status_code=403)
        
         return JSONResponse(
-           GiftFullResponse.model_validate(gift, from_attributes=True)
+           FullGiftSerializer.model_validate(gift, from_attributes=True)
            .model_dump(context={'auth_user_id': user.id})
         )
     
@@ -121,7 +121,7 @@ def init_endpoints(gift_router: APIRouter):
             raise HTTPException(status_code=403)
         
         return JSONResponse(
-            GiftFullResponse.model_validate(gift, from_attributes=True)
+            FullGiftSerializer.model_validate(gift, from_attributes=True)
             .model_dump(context={'auth_user_id': user.id})
         )
        

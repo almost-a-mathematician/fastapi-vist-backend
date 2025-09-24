@@ -42,6 +42,9 @@ class User(Model):
     )
     is_admin: Mapped[bool] = mapped_column(default=False)
 
+    @classmethod
+    def get_all_columns(cls):
+        return cls.__table__.columns.keys() + ['friends']
 
     def are_friends_with(self, user):
         return user.id in [friend.id for friend in self.friends]

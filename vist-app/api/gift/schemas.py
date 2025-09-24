@@ -1,11 +1,10 @@
 from typing import List
 from pydantic import BaseModel, HttpUrl
-from api.user.schemas import UserResponse
+from api.user.schemas import UserSerializer
 
 
 class СreateGift(BaseModel):
     name: str
-    # img??? в будущем провалидировать вручную (функция в gift/endpoints)
     price: float
     description: str | None = None
     link_url: HttpUrl
@@ -13,30 +12,30 @@ class СreateGift(BaseModel):
     
 class UpdateGift(BaseModel):
     name: str = None
-    # img: bytes = None
     price: float = None
     description: str | None = None
     link_url: HttpUrl = None
     is_priority: bool = None
+
+class BookGift(BaseModel):
+    booked_by: int | None 
     
-class GiftIcon(BaseModel):
+class GiftIconSerializer(BaseModel):
     id: int
     img: str | None
 
-class GiftResponse(GiftIcon):
+class GiftSerializer(GiftIconSerializer):
     link_url: str
     is_priority: bool
-    booked_by: UserResponse | None 
+    booked_by: UserSerializer | None 
 
-class GiftFullResponse(GiftResponse): 
+class FullGiftSerializer(GiftSerializer): 
     name: str
     price: float
     description: str | None
     wishlist_id: int
 
-class GiftsFullResponse(BaseModel):
-    items: List[GiftFullResponse]
+class FullGiftsListSerializer(BaseModel):
+    items: List[FullGiftSerializer]
 
-class BookGift(BaseModel):
-    booked_by: int | None 
 
