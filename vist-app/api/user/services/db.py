@@ -9,113 +9,116 @@ from api.media.schemas import validate_file
 from sqlalchemy.orm import selectinload
 
 
-class UserExistsException(BaseException): 
-    def __init__(self, column: str):
-        self.column = column
+class UserExistsException(BaseException):
 
-class UserDoesNotExistException(BaseException): 
-    ...
+	def __init__(self, column: str):
+		self.column = column
+
+
+class UserDoesNotExistException(BaseException):
+	...
+
 
 class UserPermissionException(BaseException):
-    ...
+	...
+
 
 class DuplicateUsernameException(BaseException):
-    ...
+	...
+
 
 class UserService:
-    def __init__(self, Session: AsyncSessionMaker, media_service: MediaService):
-        self.Session = Session
-        self.media_service = media_service
 
-    ''' инкапсулирует логику работы с бд над моделью юзера '''
-    async def get(self, **kwargs):
-        async with self.Session() as session:
-            query = select(User).options(selectinload(User.friends))
+	def __init__(self, Session: AsyncSessionMaker, media_service: MediaService):
+		self.Session = Session
+		self.media_service = media_service
 
-            for key, value in kwargs.items():
-                if hasattr(User, key):
-                    column = getattr(User, key)
-                    query = query.where(column == value)
+	''' инкапсулирует логику работы с бд над моделью юзера '''
 
-            user = (await session.scalars(query)).first()
+	async def get(self, **kwargs):
+		async with self.Session() as session:
+			query = select(User).options(selectinload(User.friends))
 
-            if user is None:
-                raise UserDoesNotExistException
-    
-            return user
+			for key, value in kwargs.items():
+				if hasattr(User, key):
+					column = getattr(User, key)
+					query = query.where(column == value)
 
-    
-    async def create(self, username, password, email):
-        async with self.Session() as session:
+			user = (await session.scalars(query)).first()
 
-            try:
-                user = User(username=username, password=password, email=email)    
-                session.add(user)
-                await session.commit()
-                await session.refresh(user)
-            except IntegrityError as e: 
-                original_error = is_unique_error(e)
+			if user is None:
+				raise UserDoesNotExistException
 
-                if original_error is not None:
-                    raise UserExistsException(column='email' if '(email)' in str(original_error) else 'username')       
-                else:
-                    raise e
-    
-            return user
-        
-    async def update(self, id: int, updater: User, **kwargs):
-        async with self.Session() as session:
-            user = await session.get(User, id)
+			return user
 
-            try:
-                if user is None:
-                    raise UserDoesNotExistException
-                if user.id is not updater.id:
-                    raise UserPermissionException
-                for key, value in kwargs.items():
-                    if key == 'password':
-                        value = password_manager.generate(value)
-                    if key == 'profile_pic': 
-                        if user.profile_pic is not None:
-                            await self.media_service.delete(user.profile_pic)
+	async def create(self, username, password, email):
+		async with self.Session() as session:
 
-                        if value is not None:
-                            validate_file(file=value, max_size=1500000, types=['image/png', 'image/jpeg', 'image/jpg', 'png', 'jpeg', 'jpg'])
-                            value = await self.media_service.upload(await value.read())
+			try:
+				user = User(username=username, password=password, email=email)
+				session.add(user)
+				await session.commit()
+				await session.refresh(user)
+			except IntegrityError as e:
+				original_error = is_unique_error(e)
 
-                    if hasattr(user, key):
-                        setattr(user, key, value)
+				if original_error is not None:
+					raise UserExistsException(column='email' if '(email)' in str(original_error) else 'username')
+				else:
+					raise e
 
-                await session.commit()
-                await session.refresh(user, attribute_names=User.get_all_columns())
+			return user
 
-            except  IntegrityError as e: 
-                original_error = is_unique_error(e)
+	async def update(self, id: int, updater: User, **kwargs):
+		async with self.Session() as session:
+			user = await session.get(User, id)
 
-                if original_error is not None:
-                    raise DuplicateUsernameException      
-                else:
-                    raise e
-        
-            return user
-        
-    async def delete(self, id: int, deleter: User):
-        async with self.Session() as session:
-            user = await session.get(User, id)
-            if user is None:
-                raise UserDoesNotExistException
-            if user.id is not deleter.id:
-                raise UserPermissionException
-            
-            from api.gift.models import Gift
-            
-            await session.execute(
-                update(Gift)
-                .where(Gift.booked_by_id == id)
-                .values(booked_by_id=None)
-            )
-    
-            await session.delete(user)
-            await session.commit()
-            
+			try:
+				if user is None:
+					raise UserDoesNotExistException
+				if user.id is not updater.id:
+					raise UserPermissionException
+				for key, value in kwargs.items():
+					if key == 'password':
+						value = password_manager.generate(value)
+					if key == 'profile_pic':
+						if user.profile_pic is not None:
+							await self.media_service.delete(user.profile_pic)
+
+						if value is not None:
+							validate_file(file=value, max_size=1500000, types=['image/png', 'image/jpeg', 'image/jpg', 'png', 'jpeg', 'jpg'])
+							value = await self.media_service.upload(await value.read())
+
+					if hasattr(user, key):
+						setattr(user, key, value)
+
+				await session.commit()
+				await session.refresh(user, attribute_names=User.get_all_columns())
+
+			except IntegrityError as e:
+				original_error = is_unique_error(e)
+
+				if original_error is not None:
+					raise DuplicateUsernameException
+				else:
+					raise e
+
+			return user
+
+	async def delete(self, id: int, deleter: User):
+		async with self.Session() as session:
+			user = await session.get(User, id)
+			if user is None:
+				raise UserDoesNotExistException
+			if user.id is not deleter.id:
+				raise UserPermissionException
+
+			from api.gift.models import Gift
+
+			await session.execute(update(Gift).where(Gift.booked_by_id == id).values(booked_by_id=None))
+
+			await session.delete(user)
+			await session.commit()
+
+
 user_service = UserService(Session, media_service)

@@ -4,37 +4,41 @@ from api.user.schemas import UserSerializer
 
 
 class Register(BaseModel):
-    username: str
-    email: EmailStr
-    password: str
+	username: str
+	email: EmailStr
+	password: str
+
 
 class Login(BaseModel):
-    username: str = None
-    email: EmailStr = None
-    password: str
+	username: str = None
+	email: EmailStr = None
+	password: str
 
-    @model_validator(mode='after')
-    def check_username_or_email_filled(self):
-        if (self.username is None) == (self.email is None):
-            raise ValueError
-        
-        return self
-    
+	@model_validator(mode='after')
+	def check_username_or_email_filled(self):
+		if (self.username is None) == (self.email is None):
+			raise ValueError
+
+		return self
+
+
 class ForgetPassword(BaseModel):
-    email: EmailStr
+	email: EmailStr
+
 
 class ResetPassword(BaseModel):
-    password: str
+	password: str
+
 
 class RegisterSerializer(BaseModel):
-    user: UserSerializer
-    avatar_token: str
+	user: UserSerializer
+	avatar_token: str
+
 
 class DuplicateUserSerializer(BaseModel):
-    column: Literal['email', 'username'] 
+	column: Literal['email', 'username']
+
 
 class TokensSerializer(BaseModel):
-    access: str
-    refresh: str
-    
-
+	access: str
+	refresh: str

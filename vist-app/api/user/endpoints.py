@@ -9,103 +9,123 @@ from api.media.schemas import validate_file
 
 def init_endpoints(user_router: APIRouter):
 
-    @user_router.get(
-        path='/{id}',
-        responses={
-            404: {'description': 'in case if user does not exist'}
-        }
-    )
-    async def get(id: int, user: AuthUserDep) -> FullUserSerializer:
-        try:
-            found_user = await user_service.get(id=id)
-        except UserDoesNotExistException:
-            raise HTTPException(status_code=404)
-        
-        return JSONResponse(
-            FullUserSerializer
-            .model_validate(found_user, from_attributes=True)
-            .model_dump(context={'auth_user_id': user.id})
-        )
-    
-    @user_router.post(
-            path='/{id}/avatar',
-            responses={
-            404: {'description': 'in case if user does not exist'},
-            403: {'description': 'in case if user has no permission for the action'}
-        }
-    )
-    async def set_avatar(id: int, user: AuthUserDep, img: UploadFile):
+	@user_router.get(
+		path='/{id}',
+		responses={
+		404: {
+		'description': 'in case if user does not exist'
+		}
+		}
+	)
+	async def get(id: int, user: AuthUserDep) -> FullUserSerializer:
+		try:
+			found_user = await user_service.get(id=id)
+		except UserDoesNotExistException:
+			raise HTTPException(status_code=404)
 
-        try:
-            user = await user_service.update(id, updater=user, profile_pic=img)
-        except UserDoesNotExistException:
-            raise HTTPException(status_code=404)
-        except UserPermissionException:
-            raise HTTPException(status_code=403)
+		return JSONResponse(
+			FullUserSerializer.model_validate(found_user,
+			from_attributes=True).model_dump(context={
+			'auth_user_id': user.id
+			})
+		)
 
-        return JSONResponse(
-            UserSerializer
-            .model_validate(user, from_attributes=True)
-            .model_dump(context={'auth_user_id': user.id})
-        )
+	@user_router.post(
+		path='/{id}/avatar',
+		responses={
+		404: {
+		'description': 'in case if user does not exist'
+		},
+		403: {
+		'description': 'in case if user has no permission for the action'
+		}
+		}
+	)
+	async def set_avatar(id: int, user: AuthUserDep, img: UploadFile):
 
-    @user_router.delete(
-            path='/{id}/avatar',
-            responses={
-            404: {'description': 'in case if user or avatar does not exist'},
-            403: {'description': 'in case if user has no permission for the action'}
-        }
-    )
-    async def delete_avatar(id: int, user: AuthUserDep):
-        try:
-            await user_service.update(id, updater=user, profile_pic=None)
-        except UserDoesNotExistException:
-            raise HTTPException(status_code=404)
-        except UserPermissionException:
-            raise HTTPException(status_code=403)
+		try:
+			user = await user_service.update(id, updater=user, profile_pic=img)
+		except UserDoesNotExistException:
+			raise HTTPException(status_code=404)
+		except UserPermissionException:
+			raise HTTPException(status_code=403)
 
-        return True
+		return JSONResponse(
+			UserSerializer.model_validate(user,
+			from_attributes=True).model_dump(context={
+			'auth_user_id': user.id
+			})
+		)
 
+	@user_router.delete(
+		path='/{id}/avatar',
+		responses={
+		404: {
+		'description': 'in case if user or avatar does not exist'
+		},
+		403: {
+		'description': 'in case if user has no permission for the action'
+		}
+		}
+	)
+	async def delete_avatar(id: int, user: AuthUserDep):
+		try:
+			await user_service.update(id, updater=user, profile_pic=None)
+		except UserDoesNotExistException:
+			raise HTTPException(status_code=404)
+		except UserPermissionException:
+			raise HTTPException(status_code=403)
 
-    @user_router.patch(
-        path='/{id}',
-        responses={
-            404: {'description': 'in case if user does not exist'},
-            403: {'description': 'in case if user has no permission for the action'}, 
-            409: {'desctiption': 'duplicate username'}
-        }
-    )
-    async def update(id: int, updater: AuthUserDep, payload: UpdateUser) -> FullUserSerializer:
-        try:
-            user = await user_service.update(id, updater, **payload.model_dump(exclude_unset=True))
-        except UserDoesNotExistException:
-            raise HTTPException(status_code=404)
-        except UserPermissionException:
-            raise HTTPException(status_code=403)
-        except DuplicateUsernameException:
-            raise HTTPException(status_code=409)
-        
-        return JSONResponse(
-            FullUserSerializer
-            .model_validate(user, from_attributes=True)
-            .model_dump(context={'auth_user_id': user.id})
-        )
-            
-    @user_router.delete(
-        path='/{id}',
-        responses={
-            404: {'description': 'in case if user does not exist'},
-            403: {'description': 'in case if user has no permission for the action'}, 
-        }
-    )
-    async def delete(id: int, user: AuthUserDep):
-        try:
-            await user_service.delete(id, user)
-        except UserDoesNotExistException:
-            raise HTTPException(status_code=404)
-        except UserPermissionException:
-            raise HTTPException(status_code=403)
-        
-        return True
+		return True
 
+	@user_router.patch(
+		path='/{id}',
+		responses={
+		404: {
+		'description': 'in case if user does not exist'
+		},
+		403: {
+		'description': 'in case if user has no permission for the action'
+		},
+		409: {
+		'desctiption': 'duplicate username'
+		}
+		}
+	)
+	async def update(id: int, updater: AuthUserDep, payload: UpdateUser) -> FullUserSerializer:
+		try:
+			user = await user_service.update(id, updater, **payload.model_dump(exclude_unset=True))
+		except UserDoesNotExistException:
+			raise HTTPException(status_code=404)
+		except UserPermissionException:
+			raise HTTPException(status_code=403)
+		except DuplicateUsernameException:
+			raise HTTPException(status_code=409)
 
+		return JSONResponse(
+			FullUserSerializer.model_validate(user,
+			from_attributes=True).model_dump(context={
+			'auth_user_id': user.id
+			})
+		)
+
+	@user_router.delete(
+		path='/{id}',
+		responses={
+		404: {
+		'description': 'in case if user does not exist'
+		},
+		403: {
+		'description': 'in case if user has no permission for the action'
+		},
+		}
+	)
+	async def delete(id: int, user: AuthUserDep):
+		try:
+			await user_service.delete(id, user)
+		except UserDoesNotExistException:
+			raise HTTPException(status_code=404)
+		except UserPermissionException:
+			raise HTTPException(status_code=403)
+
+		return True

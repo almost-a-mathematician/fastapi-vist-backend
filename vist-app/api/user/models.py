@@ -5,56 +5,46 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Column, ForeignKey, String, Date, Table
 
 if TYPE_CHECKING:
-    from api.wishlist.models import Wishlist
-
+	from api.wishlist.models import Wishlist
 
 user_friend_association = Table(
-    'user_friend_association',
-    Model.metadata,
-    Column('user_id', ForeignKey('users.id')),
-    Column('friend_id', ForeignKey('users.id'))
+	'user_friend_association',
+	Model.metadata,
+	Column('user_id',
+	ForeignKey('users.id')),
+	Column('friend_id',
+	ForeignKey('users.id'))
 )
 
+
 class User(Model):
-    __tablename__ = 'users' 
+	__tablename__ = 'users'
 
-    username: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(String(256), nullable=False)
-    email: Mapped[str] = mapped_column(String(254), unique=True, nullable=False)
-    profile_pic: Mapped[str] = mapped_column(String(250), nullable=True) 
-    birth_date: Mapped[Date] = mapped_column(Date, nullable=True)
-    is_hidden_bd: Mapped[bool] = mapped_column(default=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
-    friends: Mapped[List['User']] = relationship(
-        secondary=user_friend_association, 
-        cascade='all, delete',
-        primaryjoin=('User.id == user_friend_association.c.user_id'),
-        secondaryjoin=('User.id == user_friend_association.c.friend_id')
-    )
-    verified: Mapped[bool] = mapped_column(default=False)
-    last_email_at: Mapped[datetime] = mapped_column(nullable=True)
-    
+	username: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
+	password: Mapped[str] = mapped_column(String(256), nullable=False)
+	email: Mapped[str] = mapped_column(String(254), unique=True, nullable=False)
+	profile_pic: Mapped[str] = mapped_column(String(250), nullable=True)
+	birth_date: Mapped[Date] = mapped_column(Date, nullable=True)
+	is_hidden_bd: Mapped[bool] = mapped_column(default=False)
+	created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+	friends: Mapped[List['User']] = relationship(
+		secondary=user_friend_association,
+		cascade='all, delete',
+		primaryjoin=('User.id == user_friend_association.c.user_id'),
+		secondaryjoin=('User.id == user_friend_association.c.friend_id')
+	)
+	verified: Mapped[bool] = mapped_column(default=False)
+	last_email_at: Mapped[datetime] = mapped_column(nullable=True)
 
-    wishlists: Mapped[List['Wishlist']] = relationship(
-        'Wishlist',
-        back_populates='owner',
-        cascade='all, delete-orphan'
-    )
-    is_admin: Mapped[bool] = mapped_column(default=False)
+	wishlists: Mapped[List['Wishlist']] = relationship('Wishlist', back_populates='owner', cascade='all, delete-orphan')
+	is_admin: Mapped[bool] = mapped_column(default=False)
 
-    @classmethod
-    def get_all_columns(cls):
-        return cls.__table__.columns.keys() + ['friends']
+	@classmethod
+	def get_all_columns(cls):
+		return cls.__table__.columns.keys() + ['friends']
 
-    def are_friends_with(self, user):
-        return user.id in [friend.id for friend in self.friends]
+	def are_friends_with(self, user):
+		return user.id in [friend.id for friend in self.friends]
 
-    def __str__(self):
-        return self.username
-    
-   
-
-
-
-
-    
+	def __str__(self):
+		return self.username

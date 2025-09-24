@@ -5,5 +5,5 @@ from api.wishlist.schemas import WishlistSerializer
 
 
 class SearchSerializer(BaseModel):
-    users: List[UserSerializer]
-    wishlists: List[WishlistSerializer]
+	users: List[UserSerializer]
+	wishlists: List[WishlistSerializer]
