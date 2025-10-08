@@ -6,6 +6,8 @@ services:
     build: .
     depends_on:
       - pgdb
+      - redis
+      - minio
     command: python main.py
     volumes:
       - .:/usr/src/app
