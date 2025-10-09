@@ -6,9 +6,10 @@ from fastapi import FastAPI
 import uvicorn
 from api.router import router as main_router
 import admin
+import os
 
 app = FastAPI()
 app.include_router(main_router)
 
 if __name__ == '__main__':
-	uvicorn.run('main:app', port=8085, reload=True)
+	uvicorn.run('main:app', host=os.getenv('HOST', '127.0.0.1'), port=int(os.getenv('PORT', 8085)), reload=True)
