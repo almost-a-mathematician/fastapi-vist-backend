@@ -69,14 +69,14 @@ class UserService:
 
 			return user
 
-	async def update(self, id: int, updater: User, **kwargs):
+	async def update(self, id: int, updater: User = None, **kwargs):
 		async with self.Session() as session:
 			user = await session.get(User, id)
 
 			try:
 				if user is None:
 					raise UserDoesNotExistException
-				if user.id is not updater.id:
+				if updater is not None and user.id is not updater.id:
 					raise UserPermissionException
 				for key, value in kwargs.items():
 					if key == 'password':
