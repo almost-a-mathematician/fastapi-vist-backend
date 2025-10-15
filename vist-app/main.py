@@ -12,4 +12,11 @@ app = FastAPI()
 app.include_router(main_router)
 
 if __name__ == '__main__':
-	uvicorn.run('main:app', host=os.getenv('HOST', '127.0.0.1'), port=int(os.getenv('PORT', 8085)), reload=True)
+	uvicorn.run(
+		'main:app',
+		host=os.getenv('HOST', default='127.0.0.1'),
+		port=int(os.getenv('PORT', default=8085)),
+		reload=True,
+		forwarded_allow_ips='127.0.0.1',
+		proxy_headers=True
+	)
