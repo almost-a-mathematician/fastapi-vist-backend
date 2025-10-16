@@ -17,6 +17,6 @@ if __name__ == '__main__':
 		host=os.getenv('HOST', default='127.0.0.1'),
 		port=int(os.getenv('PORT', default=8085)),
 		reload=True,
-		forwarded_allow_ips='*',
+		forwarded_allow_ips='172.16.0.0/12',
 		proxy_headers=True
 	)
